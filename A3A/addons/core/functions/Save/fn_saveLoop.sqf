@@ -118,7 +118,7 @@ private _revealedZones = [];
 
 {
     private _markerSide = sidesX getVariable [_x, sideUnknown];
-    if (_markerSide isNotEqualTo sideUnknown && {_markerSide isNotEqualTo resistance} && {!(_x in markersImmune)}) then 
+    if (_markerSide isNotEqualTo sideUnknown && {_markerSide isNotEqualTo resistance} && {!(_x in markersImmune)}) then
     {
 		private _dummyMarker = "Dum"+_x;
         if (markerAlpha _dummyMarker isNotEqualTo 0) then {_revealedZones pushBack _x};
@@ -243,9 +243,28 @@ _arrayConstructions = [];
 
 [] call A3A_fnc_arsenalManage;
 
+// Temporarily add active rebel AI equipment to arsenal for save
+// Includes all spawned rebel AI: HC squads, player group AI, garrison/outpost units
+private _activeRebelUnits = [];
+if (A3U_AITakeFromArsenal) then {
+	_activeRebelUnits = allUnits select {
+		alive _x
+		&& {!isPlayer _x}
+		&& {_x getVariable ["spawner", false]}
+		&& {side group _x == teamPlayer}
+	};
+	Debug_1("Active rebel units for arsenal snapshot: %1", count _activeRebelUnits);
+	{ ([_x, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem } forEach _activeRebelUnits;
+};
+
 _jna_dataList = [];
 _jna_dataList = _jna_dataList + jna_dataList;
 ["jna_dataList", _jna_dataList] call A3A_fnc_setStatVariable;
+
+// Remove temporarily added equipment to keep session state consistent
+if (A3U_AITakeFromArsenal) then {
+	{ ([_x, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_removeItem } forEach _activeRebelUnits;
+};
 
 _prestigeOPFOR = [];
 _prestigeBLUFOR = [];

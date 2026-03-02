@@ -1,27 +1,27 @@
 /*
     Author:
         jwoodruff40, wersal454
-    
+
     Description:
         Fully equips a rebel infantry unit based on their class and unlocked gear
-    
+
     Params:
         _unit <OBJECT> <Default: None> the unit to equip
         _recruitType <SCALAR> <Default: 0> the type of recruit; 0 = player or player's squad, 1 = high command unit, 2 = garrison unit
         _forceClass <STRING> <Default: ""> to override the unit type, e.g. "unitUnarmed"
-    
+
     Dependencies:
         N/A
-    
+
     Scope:
         N/A
-    
+
     Environment:
         Scheduled, any machine
-    
+
     Usage:
         [_unit, 0] call A3A_fnc_equipRebel;
-    
+
     Return:
         Nothing
 */
@@ -61,7 +61,7 @@ private _fnc_addCharges = {
 
 private _fnc_addRadio = {
     params ["_unit"];
-    
+
     private _radio = selectRandomWeighted (A3A_rebelGear get "Radios");
     if (!isNil "_radio") then {_unit linkItem _radio};
 };
@@ -78,7 +78,7 @@ private _fnc_addFacewear = {
 
 private _fnc_addHeadgear = {
     params ["_unit"];
-    
+
     private _helmet = selectRandomWeighted (A3A_rebelGear get "ArmoredHeadgear");
     if (_helmet == "") then { _helmet = selectRandom (A3A_faction_reb get "headgear") };
     _unit addHeadgear _helmet;
@@ -121,7 +121,7 @@ private _fnc_addPrimary = {
         case ("Medic"): { "SMGs" };
         default { "Rifles" };
     }};
-    
+
     private _totalMagWeight = switch (_typeTag) do {
         case ("Rifleman"): { 70 };
         case ("MachineGunner"): { 150 };
@@ -129,7 +129,7 @@ private _fnc_addPrimary = {
         case ("AA"): { 40 };
         default { 50 };
     };
-    
+
     if (isNil "_weaponType" || {_weaponType isEqualTo []}) exitWith {};
     [_unit, _weaponType, _totalMagWeight] call A3A_fnc_randomWeapon;
 };
@@ -137,8 +137,8 @@ private _fnc_addPrimary = {
 private _fnc_addSecondary = {
     params ["_unit", "_overrideClass"];
 
-    if !((_typeTag in ["LAT", "AT", "AA"]) || (_typeTag == "Rifleman" && {random 20 < tierWar})) exitWith {}; 
-    
+    if !((_typeTag in ["LAT", "AT", "AA"]) || (_typeTag == "Rifleman" && {random 20 < tierWar})) exitWith {};
+
     private _weapon = if (isNil "_overrideClass") then {
         private _rLaunchers = A3A_rebelGear get "RocketLaunchers";
         private _dLaunchers = _rLaunchers arrayIntersect AllDisposable;
@@ -151,7 +151,7 @@ private _fnc_addSecondary = {
             ["AT", _mLaunchersAT],
             ["AA", _mLaunchersAA]
         ];
-        
+
         if (_launcherPool get _typeTag isEqualTo []) exitWith {};
         selectRandomWeighted (_launcherPool get _typeTag);
     } else {
@@ -166,7 +166,7 @@ private _fnc_addHandgun = {
     params ["_unit", "_overrideClass"];
 
     private _weaponType = if !(isNil "_overrideClass") then { _overrideClass } else { "Handguns" };
-    
+
     if (isNil "_weaponType" || {_weaponType isEqualTo []}) exitWith {};
     [_unit, _weaponType, 10] call A3A_fnc_randomWeapon;
 };
@@ -203,7 +203,7 @@ private _fnc_addClassEquip = {
     params ["_unit"];
 
     private _items = items _unit;
-    
+
     switch (_typeTag) do {
         case ("Rifleman"): {
             [_unit, "Grenades", 2] call _fnc_addGrenades;
@@ -283,11 +283,14 @@ private _fnc_addUniform = {
     };
 };
 
+([_unit, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem;
+_unit setUnitLoadout (configFile >> "EmptyLoadout");
+
 if (!isNil "_customLoadout") then {
     // * Apply the loadout, then override it
     private _tempLoadout = +_customLoadout;
     _unit setUnitLoadout _tempLoadout;
-    
+
     if (isNil {_customLoadout select 3}) then { _unit call _fnc_addUniform } else { [_unit, uniform _unit] call _fnc_addUniform};
     if (isNil {_customLoadout select 6}) then { _unit call _fnc_addHeadgear };
     if (isNil {_customLoadout select 7}) then { _unit call _fnc_addFacewear };
@@ -298,7 +301,7 @@ if (!isNil "_customLoadout") then {
     if (isNil {_customLoadout select 1}) then { _unit call _fnc_addSecondary } else { [_unit, _customLoadout select 1] call _fnc_addSecondary };
     if (isNil {_customLoadout select 2}) then { _unit call _fnc_addHandgun } else { [_unit, _customLoadout select 2] call _fnc_addHandgun };
     if (isNil {_customLoadout select 8}) then { _unit call _fnc_addBinoculars } else { [_unit, _customLoadout select 8] call _fnc_addBinoculars };
-    
+
     // * Don't cheese allowing launchers with rifleman.
     // * If rifleman and launcher added to loadout, still subject to chance whether rifleman will equip it.
     // * LAT / AT / AA is guaranteed.
@@ -325,4 +328,12 @@ if (backpackItems _unit isEqualTo []) then { removeBackpack _unit };
 
 Verbose_3("Class %1, type %2, loadout %3", _unitType, _recruitType, str (getUnitLoadout _unit));
 
-if (_recruitType isEqualTo 0) then { _unit setVariable ["orgLoadout", getUnitLoadout _unit, true] };
+if (A3U_AITakeFromArsenal) then {
+    // remove unit's current items from arsenal after equipping loadout (prevent item duplication with unlocks disabled)
+    ([_unit, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_removeItem;
+};
+
+// re-generate A3A_rebelGear to avoid equipping items that are no longer available or quantity decremented below min quantity for equipping
+// avoid filling JIP queue
+// do this every time, so *added* items are always reflected in generation, not just *removed* items
+[] remoteExecCall ["A3A_fnc_generateRebelGear", 2, false];

@@ -51,10 +51,10 @@ if(hasInterface)then{
 		("<img image='" + QPATHTOFOLDER(Pictures\unloadvehicle.paa) + "' size='1.6' shadow=2/>" + format["<t size='1'> %1</t>", localize "STR_JNA_ACT_CONTAINER_OPEN"]),
         {
 			private _object = _this select 0;
-			
+
 			private _script =  {
 				params ["_object"];
-				
+
 				//check if player is looking at some object
 				private _objectSelected = cursorObject;
 				if(isnull _objectSelected)exitWith{hint localize "STR_JNA_ACT_CONTAINER_SELECTERROR1"; };
@@ -96,7 +96,7 @@ if(hasInterface)then{
 			};
 			private _conditionColor = {
 				params ["_object"];
-				
+
 				!isnull cursorObject
 				&&{
 					_object distance cursorObject < 10;
@@ -107,12 +107,12 @@ if(hasInterface)then{
 					private _tm = getNumber (configFile >> "CfgVehicles" >> _className >> "transportmaxmagazines");
 					private _tw = getNumber (configFile >> "CfgVehicles" >> _className >> "transportmaxweapons");
 					if (_tb > 0  || _tm > 0 || _tw > 0) then {true;} else {false;};
-				
+
 				}//return
 			};
 
             [localize "STR_A3AP_vehArsenal_header", localize "STR_A3AP_vehArsenal_desc"] call A3A_fnc_customHint;
-						
+
 			[_script,_conditionActive,_conditionColor,_object] call jn_fnc_common_addActionSelect;
 		},
         [],
@@ -126,11 +126,11 @@ if(hasInterface)then{
     //add quick equip button
     _object addAction [
         (format ["<img image='%1' size='1.6' shadow=2/>", "\A3\ui_f\data\GUI\Rsc\RscDisplayArsenal\vest_ca.paa"] + format["<t size='1'> %1</t>", (localize "STR_JNA_SCT_QUICK_EQUIP")]),
-        { 
+        {
             private _player = _this select 1;
             private _prefix = "loadouts_reb_militia_";
             private _loadout =  switch (typeOf _player) do {
-                case "I_G_medic_F":  { "Medic" }; 
+                case "I_G_medic_F":  { "Medic" };
                 case "I_G_Soldier_TL_F": { "SquadLeader" };
                 case "I_G_Soldier_F": { "Rifleman" };
                 case "I_G_Soldier_GL_F": { "Grenadier" };
@@ -139,10 +139,7 @@ if(hasInterface)then{
                 default { "Rifleman" };
             };
 
-            private _array = [_player, true] call jn_fnc_arsenal_cargoToArray;
-            _player setUnitLoadout (configFile >> "EmptyLoadout");
             [_player, 0, _prefix + _loadout] call A3A_fnc_equipRebel;
-            _array call jn_fnc_arsenal_addItem;
         },
         [],
         6,

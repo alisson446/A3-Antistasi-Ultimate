@@ -20,7 +20,7 @@ _groupX setCombatMode "GREEN";
 private _campfire = createVehicle ["Land_Campfire_F", _positionX];
 private _tent = ["Land_TentDome_F", getPosWorld _campfire] call BIS_fnc_createSimpleObject;
 _tent setDir (random 360);
-_tent setPos [(getPos _tent select 0) + 4, (getPos _tent select 1) + 4, (getPos _tent select 2) - 0.2]; 
+_tent setPos [(getPos _tent select 0) + 4, (getPos _tent select 1) + 4, (getPos _tent select 2) - 0.2];
 
 _props pushBack _campfire;
 _props pushBack _tent;
@@ -32,8 +32,8 @@ _props pushBack _tent;
 ["locationSpawned", [_markerX, "RebelWatchpost", true]] call EFUNC(Events,triggerEvent);
 
 waitUntil {
-	sleep 1; 
-	((spawner getVariable _markerX == 2)) or 
+	sleep 1;
+	((spawner getVariable _markerX == 2)) or
 	({alive _x} count units _groupX == 0) or (!(_markerX in watchpostsFIA))
 };
 
@@ -48,8 +48,13 @@ if ({alive _x} count units _groupX == 0) then {
 
 waitUntil {sleep 1; (spawner getVariable _markerX == 2) or (!(_markerX in watchpostsFIA))};
 
-{ 
-    deleteVehicle _x 
+{
+    if (alive _x) then {
+        if (A3U_AITakeFromArsenal) then {
+            ([_x, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem;
+        };
+    };
+    deleteVehicle _x;
 } forEach units _groupX;
 deleteGroup _groupX;
 

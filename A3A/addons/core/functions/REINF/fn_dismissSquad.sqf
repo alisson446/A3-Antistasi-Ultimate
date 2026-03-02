@@ -55,6 +55,9 @@ private _assignedVehicles =	[];
 					case (_assemblesTo in (FactionGet(reb,"staticAT"))): {_resourcesFIA = _resourcesFIA + ([_assemblesTo] call A3A_fnc_vehiclePrice)/2};
 				};
 			};
+			if (A3U_AITakeFromArsenal) then {
+				([_x, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem;
+			};
 		};
 		deleteVehicle _x;
 	} forEach units _groupX;

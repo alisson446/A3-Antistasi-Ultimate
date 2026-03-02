@@ -45,7 +45,7 @@ class Params
         };
 
         * if you want your section to show up as an entirely new option in the Parameter Types Dropdown ComboBox,
-        * you'll need to add the type to the dropdown under case ("onLoad") like: 
+        * you'll need to add the type to the dropdown under case ("onLoad") like:
 
         // * Populate the Parameter Type Dropdown
         private _basicParamsIndex =  _paramsType lbAdd (localize "STR_antistasi_dialogs_setup_params_basic_label");
@@ -61,7 +61,7 @@ class Params
         _paramsType lbSetValue [_bldParamsIndex, 3];
         _paramsType lbSetValue [_devParamsIndex, 4];
         _paramsType lbSetValue [_sdcParamsIndex, 5]; // and give it an integer value here
-        
+
         _paramsType lbSetCurSel _basicParamsIndex;
 
         * and then add a new case with the above integer value in the _shownTypes switch like:
@@ -865,7 +865,7 @@ class Params
         texts[] = {"0","50","100","250","300"};
         default = 100;
     };
-    
+
 
     class LootParams : AllParams
     {
@@ -1224,6 +1224,13 @@ class Params
         texts[] = {$STR_antistasi_dialogs_generic_button_no_text, $STR_antistasi_dialogs_generic_button_yes_text};
         default = 1;
         lockInGame = 1;
+    };
+    class A3U_AITakeFromArsenal : ExperimentalParams
+    {
+        title = $STR_params_AITakeFromArsenal;
+        values[] = {0, 1};
+        texts[] = {$STR_antistasi_dialogs_generic_button_no_text, $STR_antistasi_dialogs_generic_button_yes_text};
+        default = 1;
     };
 
     class DevelopmentParamsSpacer : AllParams

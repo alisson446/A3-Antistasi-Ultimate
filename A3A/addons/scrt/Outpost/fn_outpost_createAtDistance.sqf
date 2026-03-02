@@ -66,8 +66,8 @@ _groupX setCombatMode "YELLOW";
 ["locationSpawned", [_markerX, "RebelAtEmpl", true]] call EFUNC(Events,triggerEvent);
 
 waitUntil {
-	sleep 1; 
-	((spawner getVariable _markerX == 2)) or 
+	sleep 1;
+	((spawner getVariable _markerX == 2)) or
 	({alive _x} count units _groupX == 0) or (!(_markerX in atpostsFIA))
 };
 
@@ -82,12 +82,17 @@ if ({alive _x} count units _groupX == 0) then {
 
 waitUntil {sleep 1; (spawner getVariable _markerX == 2) or (!(_markerX in atpostsFIA))};
 
-if (!isNull _veh) then { 
+if (!isNull _veh) then {
     deleteVehicle _veh;
 };
 
-{ 
-    deleteVehicle _x 
+{
+    if (alive _x) then {
+        if (A3U_AITakeFromArsenal) then {
+            ([_x, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem;
+        };
+    };
+    deleteVehicle _x;
 } forEach units _groupX;
 deleteGroup _groupX;
 

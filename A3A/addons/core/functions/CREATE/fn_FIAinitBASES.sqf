@@ -18,6 +18,7 @@ if (count _this > 1) then {
 };
 
 [_unit] call A3A_fnc_initRevive;
+_unit setVariable ["spawner",true,true];
 _unit allowFleeing 0;
 
 private _typeX = _unit getVariable "unitType";
@@ -39,6 +40,7 @@ _unit selectWeapon (primaryWeapon _unit);
 private _killedEhId = _unit addEventHandler ["killed", {
 	_victim = _this select 0;
 	_killer = _this select 1;
+	_victim setVariable ["spawner",nil,true];
 	[_victim] remoteExec ["A3A_fnc_postmortem",2];
     [side _killer, -1, 30] remoteExec ["A3A_fnc_addAggression", 2];
 	if (side _killer == Occupants) then

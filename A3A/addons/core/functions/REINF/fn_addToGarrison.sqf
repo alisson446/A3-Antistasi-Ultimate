@@ -98,6 +98,9 @@ if (_limit != -1) then {
             {
                 private _unitType = _x getVariable "unitType";
                 _refundMoney = _refundMoney + (server getVariable _unitType);
+                if (A3U_AITakeFromArsenal && {alive _x}) then {
+                    ([_x, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem;
+                };
                 deleteVehicle _x;
             } forEach _unitsToRefund;
 
@@ -161,7 +164,12 @@ if (spawner getVariable _nearX != 2) then {
 };
 
 if (!_noDeletion) then {
-    {deleteVehicle _x} forEach (_unitsX select {alive _x});
+    {
+        if (A3U_AITakeFromArsenal) then {
+            ([_x, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem;
+        };
+        deleteVehicle _x;
+    } forEach (_unitsX select {alive _x});
     deleteGroup _groupX;
 } else {
     {

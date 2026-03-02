@@ -167,7 +167,14 @@ if (_typeX == "rem") then {
 		};
 		default {
 			garrison setVariable [_site,[],true];
-			{if (_x getVariable ["markerX",""] == _site) then {deleteVehicle _x}} forEach allUnits;
+			{
+				if (_x getVariable ["markerX",""] == _site) then {
+					if (A3U_AITakeFromArsenal && {alive _x}) then {
+						([_x, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem;
+					};
+					deleteVehicle _x;
+				};
+			} forEach allUnits;
 		};
 	};
 

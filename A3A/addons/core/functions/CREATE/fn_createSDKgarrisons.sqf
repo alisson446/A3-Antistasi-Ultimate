@@ -74,17 +74,17 @@ if (_typeCrew in _garrison) then {
 
     // Get all available crew positions
     private _crewPositions = [];
-    
+
     // Check gunner position
     if (isNull gunner _veh) then {
         _crewPositions pushBack ["Gunner", []];
     };
-    
+
     // Check commander position
     if ((_veh emptyPositions "Commander") > 0 && isNull commander _veh) then {
         _crewPositions pushBack ["Commander", []];
     };
-    
+
     // Check turret positions - FIXED TURRET UNIT CHECK
     private _emptyTurrets = allTurrets [_veh, false] select { isNull (_veh turretUnit _x) };
     { _crewPositions pushBack ["Turret", _x] } forEach _emptyTurrets;
@@ -93,11 +93,11 @@ if (_typeCrew in _garrison) then {
     {
         if (count _garrison == 0) exitWith {};
         _x params ["_role", "_turretPath"];
-        
+
         // Find rifleman in garrison
         private _index = _garrison findIf { _x == FactionGet(reb,"unitRifle") };
         if (_index == -1) exitWith {};
-        
+
         // Create unit - FIXED TYPEOF CHECK
         private _unitGroup = if (typeOf _veh in FactionGet(all,"staticMortars")) then {
             if (isNull _groupMortars) then { _groupMortars = createGroup teamPlayer };
@@ -106,12 +106,12 @@ if (_typeCrew in _garrison) then {
             if (isNull _groupStatics) then { _groupStatics = createGroup teamPlayer };
             _groupStatics
         };
-        
+
         private _unit = [_unitGroup, _garrison select _index, _positionX, [], 0, "NONE"] call A3A_fnc_createUnit;
-        
+
         // Assign position
         switch (_role) do {
-            case "Gunner": { 
+            case "Gunner": {
                 _unit moveInGunner _veh;
                 if (_unitGroup == _groupMortars) then {
                     [_unitGroup] call A3A_fnc_artilleryAdd;
@@ -120,14 +120,14 @@ if (_typeCrew in _garrison) then {
             case "Commander": { _unit moveInCommander _veh };
             case "Turret": { _unit moveInTurret [_veh, _turretPath] };
         };
-        
+
         // Initialize and track unit
         [_unit,_markerX] call A3A_fnc_FIAinitBases;
         _soldiers pushBack _unit;
         _garrison deleteAt _index;
-        
+
     } forEach _crewPositions;
-    
+
 } forEach _staticsX;
 
 
@@ -172,7 +172,14 @@ for "_i" from 0 to (count _groups) - 1 do {
 
 waitUntil {sleep 1; (spawner getVariable _markerX == 2)};
 
-{ if (alive _x) then { deleteVehicle _x }; } forEach _soldiers;
+{
+	if (alive _x) then {
+		if (A3U_AITakeFromArsenal) then {
+			([_x, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem;
+		};
+		deleteVehicle _x;
+	};
+} forEach _soldiers;
 { deleteVehicle _x } forEach _civs;
 { deleteGroup _x } forEach _groups;
 

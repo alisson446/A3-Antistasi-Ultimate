@@ -43,6 +43,9 @@ if (_typeX isEqualType "") then {
         waitUntil {sleep 1; (spawner getVariable _markerX == 2)};
         if (alive _unit) then {
             private _groupX = group _unit;
+            if (A3U_AITakeFromArsenal) then {
+                ([_unit, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem;
+            };
             if ((_unit getVariable "unitType") isEqualTo FactionGet(reb,"unitCrew")) then {deleteVehicle (vehicle _unit)};
             deleteVehicle _unit;
             if (count units _groupX == 0) then {deleteGroup _groupX};

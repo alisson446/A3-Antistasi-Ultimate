@@ -22,9 +22,14 @@ if(typeName (_this select 0) isEqualTo "SCALAR")then{//[_index, _item] or [_inde
 			if(_index == -1)exitWith{["ERROR in additemarsenal: %1", _this] call BIS_fnc_error};
 			if(_index == IDC_RSCDISPLAYARSENAL_TAB_CARGOMAG)then{_index = IDC_RSCDISPLAYARSENAL_TAB_CARGOMAGALL};
 
-			//update
-			private _playersInArsenal = +(server getVariable ["jna_playersInArsenal",[]]);
-			if!(0 in _playersInArsenal)then{_playersInArsenal pushBackUnique 2;};
+			//update server immediately if local, avoids race conditions with save
+			if (isServer) then { ["UpdateItemRemove",[_index, _item, _amount,true]] call jn_fnc_arsenal }
+			else { ["UpdateItemRemove",[_index, _item, _amount,true]] remoteExecCall ["jn_fnc_arsenal",2] };
+
+			// then update other players in arsenal. Don't execute on server twice
+			private _playersInArsenal = +(server getVariable ["jna_playersInArsenal",[]]) - [2];
+			if (0 in _playersInArsenal) then { _playersInArsenal = -2 };
+			if (_playersInArsenal isEqualTo []) exitWith {};
 			["UpdateItemRemove",[_index, _item, _amount,true]] remoteExecCall ["jn_fnc_arsenal",_playersInArsenal];
 		};
 	} forEach _x;
