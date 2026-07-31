@@ -311,7 +311,32 @@ private _fnc_addClassEquip = {
 private _fnc_addUniform = {
     params ["_unit", "_overrideClass"];
 
-    if (isNil "_overrideClass") then { _unit forceAddUniform (selectRandom (A3A_faction_reb get 'uniforms')) };
+    // * Com _overrideClass o uniforme ja veio do loadout customizado aplicado
+    // * acima. So intervimos se aquele loadout nao vestiu ninguem.
+    if (!isNil "_overrideClass" && {uniform _unit isNotEqualTo ""}) exitWith {};
+
+    private _uniform = "";
+    private _pool = A3A_faction_reb getOrDefault ["uniforms", []];
+    if (_pool isEqualType [] && {_pool isNotEqualTo []}) then {
+        private _pick = selectRandom _pool;
+        if (!isNil "_pick" && {_pick isEqualType ""}) then { _uniform = _pick };
+    };
+
+    // * Fallback. O setUnitLoadout (EmptyLoadout) mais abaixo remove o uniforme
+    // * que a unidade herda da propria classe de config, entao um template de
+    // * faccao sem a chave "uniforms" produz unidades peladas. Os tres templates
+    // * rebeldes da Vanilla tinham exatamente essa lacuna; templates de terceiros
+    // * podem ter. Aqui devolvemos o uniforme da classe de config, que e
+    // * precisamente o que foi removido.
+    if (_uniform isEqualTo "") then {
+        _uniform = getText (configFile >> "CfgVehicles" >> typeOf _unit >> "uniformClass");
+    };
+
+    if (_uniform isEqualTo "") exitWith {
+        Error_1("equipRebel: nenhum uniforme disponivel para a classe %1", typeOf _unit);
+    };
+
+    _unit forceAddUniform _uniform;
 };
 
 ([_unit, true] call jn_fnc_arsenal_cargoToArray) call jn_fnc_arsenal_addItem;
