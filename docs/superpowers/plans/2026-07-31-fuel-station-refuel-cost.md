@@ -858,7 +858,7 @@ Em `A3A/addons/core/functions/init/fn_initClient.sqf`, logo após a linha 190 (`
 [] spawn A3A_fnc_refuelMonitor;
 ```
 
-- [ ] **Step 4: Verificar o caminho feliz in-game**
+- [ ] **Step 3: Verificar o caminho feliz in-game**
 
 Empacote, entre na partida e:
 
@@ -869,19 +869,19 @@ Empacote, entre na partida e:
 
 Esperado: o hint de resumo aparece com os litros e o valor, e o dinheiro caiu na proporção de `litros × A3U_refuelCostPerLiter`.
 
-- [ ] **Step 5: Verificar que proximidade sozinha não cobra**
+- [ ] **Step 4: Verificar que proximidade sozinha não cobra**
 
 Estacione ao lado da bomba com o tanque cheio, saia do veículo, espere trinta segundos e confira `player getVariable "moneyX"`.
 
 Esperado: valor idêntico ao do início, nenhum hint na tela. Este é o cenário que a arquitetura promete e o que mais assusta em revisão.
 
-- [ ] **Step 6: Verificar o desligamento**
+- [ ] **Step 5: Verificar o desligamento**
 
 Reinicie a missão com `A3U_refuelCostEnabled` em Não. Abasteça no posto.
 
 Esperado: abastecimento normal, sem cobrança e sem hint. No log do RPT deve haver a linha de `Info` dizendo que o monitor não iniciou.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add A3A/addons/core/functions/Refuel/fn_refuelMonitor.sqf A3A/addons/core/functions/init/fn_initClient.sqf
