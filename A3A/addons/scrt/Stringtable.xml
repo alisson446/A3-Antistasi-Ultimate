@@ -17476,6 +17476,17 @@
                 <Original>The faction needs %1%2 to cover the fuel for this move, but only has %3%2.</Original>
             </Key>
         </Container>
+        <Container name="A3A_Refuel">
+            <Key ID="STR_A3A_refuel_header">
+                <Original>Fuel Station</Original>
+            </Key>
+            <Key ID="STR_A3A_refuel_denied">
+                <Original>Not enough credits to keep fuelling. You have %1%2.</Original>
+            </Key>
+            <Key ID="STR_A3A_refuel_charged">
+                <Original>Pumped %1 L for %2%3.&lt;br/&gt;Balance: %4%3</Original>
+            </Key>
+        </Container>
         <Container name="A3A_OrgPlayers">
             <Key ID="STR_A3A_OrgPlayers_donateMoney_header">
                 <Original>Donate Money</Original>
