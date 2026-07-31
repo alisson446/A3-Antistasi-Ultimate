@@ -8297,6 +8297,18 @@
             <Key ID="STR_params_ftCostPerKm_desc">
                 <Original>Base credits charged per kilometre travelled, before the vehicle multiplier.</Original>
             </Key>
+            <Key ID="STR_params_refuelCostEnabled">
+                <Original>Fuel Stations: charge for refuelling</Original>
+            </Key>
+            <Key ID="STR_params_refuelCostEnabled_desc">
+                <Original>Charges the player's wallet for fuel pumped into a vehicle at a map fuel station. Works with both the vanilla and the ACE refuelling systems.</Original>
+            </Key>
+            <Key ID="STR_params_refuelCostPerLiter">
+                <Original>Fuel Stations: cost per litre</Original>
+            </Key>
+            <Key ID="STR_params_refuelCostPerLiter_desc">
+                <Original>Credits charged per litre pumped. Bigger vehicles have bigger tanks, so they pay more. Zero disables the charge.</Original>
+            </Key>
             <Key ID="STR_params_development">
                 <Original>DEVELOPMENT OPTIONS</Original>
                 <Russian>НАСТРОЙКИ ДЛЯ РАЗРАБОТКИ</Russian>

@@ -3126,6 +3126,30 @@ class Params
         texts[] = {"5", "10", "15", "20", "30", "50"};
         default = 20;
     };
+    class A3U_refuelCostEnabled : ExperimentalParams
+    {
+        title = $STR_params_refuelCostEnabled;
+        tooltip = $STR_params_refuelCostEnabled_desc;
+        values[] = {0, 1};
+        texts[] = {$STR_antistasi_dialogs_generic_button_no_text, $STR_antistasi_dialogs_generic_button_yes_text};
+        default = 1;
+        class dependencies
+        {
+            class A3U_refuelCostPerLiter
+            {
+                value = 0;
+                lockedByDependency = 1;
+            };
+        };
+    };
+    class A3U_refuelCostPerLiter : ExperimentalParams
+    {
+        title = $STR_params_refuelCostPerLiter;
+        tooltip = $STR_params_refuelCostPerLiter_desc;
+        values[] = {0, 1, 2, 3, 5, 10};
+        texts[] = {"0", "1", "2", "3", "5", "10"};
+        default = 2;
+    };
 
     class DevelopmentParamsSpacer : AllParams
     {
