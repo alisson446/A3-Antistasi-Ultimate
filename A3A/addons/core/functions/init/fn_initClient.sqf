@@ -188,6 +188,7 @@ if (playerMarkersEnabled) then {
 [] spawn A3A_fnc_outOfBounds;
 [] spawn A3A_fnc_darkMapFix;
 [] spawn A3A_fnc_clientIdleChecker;
+[] spawn A3A_fnc_refuelMonitor;
 
 if (!A3A_hasACE) then {
     [] spawn A3A_fnc_tags;
