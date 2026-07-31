@@ -42,7 +42,7 @@ _vehicle setVariable ["A3A_refuelSession", nil];
 
 _session params [
     "_refFuel", "_lastFuel", "_pendingCost", "_chargedCost",
-    "_chargedLiters", "_lastSampleTime", "_lastRiseTime", "_deniedUntil"
+    "_chargedLiters", "_lastSampleTime", "_lastRiseTime"
 ];
 
 if (!alive _vehicle) exitWith {
@@ -61,8 +61,10 @@ private _capacity = [_vehicle] call A3A_fnc_fuelTankCapacity;
 private _realLiters = (((fuel _vehicle) - _refFuel) max 0) * _capacity;
 
 // * round uma vez so, sobre a diferenca: _chargedCost ja e inteiro (o tick
-// * sempre debita floor) e _pendingCost e o resto fracionario nunca debitado.
-private _settle = round ((_realLiters * _perLiter) - _chargedCost - _pendingCost);
+// * sempre debita floor). _pendingCost NAO entra nesta conta: e o resto
+// * fracionario ainda nao debitado, dinheiro que nunca saiu da carteira do
+// * jogador, entao subtrai-lo aqui perdoaria uma divida que ainda existe.
+private _settle = round ((_realLiters * _perLiter) - _chargedCost);
 
 if (_settle isNotEqualTo 0) then { [-_settle] call A3A_fnc_resourcesPlayer };
 

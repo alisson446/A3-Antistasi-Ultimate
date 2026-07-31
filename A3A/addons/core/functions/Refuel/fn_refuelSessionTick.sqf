@@ -52,7 +52,10 @@ private _fuel = fuel _vehicle;
 private _now = time;
 
 // * Estado da sessao: [_refFuel, _lastFuel, _pendingCost, _chargedCost,
-// * _chargedLiters, _lastSampleTime, _lastRiseTime, _deniedUntil].
+// * _chargedLiters, _lastSampleTime, _lastRiseTime]. O cooldown do aviso de
+// * saldo insuficiente NAO mora aqui: vive em variavel propria do veiculo
+// * (A3A_refuelDeniedUntil) para sobreviver ao fechamento da sessao, que
+// * apaga este array inteiro.
 // * setVariable local de proposito - cada cliente tem a sua propria visao.
 private _session = _vehicle getVariable ["A3A_refuelSession", []];
 
@@ -60,13 +63,15 @@ if (_session isEqualTo []) exitWith {
     // * Primeira amostra so estabelece a linha de base. Nunca cobra: nao ha
     // * delta anterior para comparar, e cobrar aqui seria cobrar por
     // * combustivel que ja estava no tanque.
-    _vehicle setVariable ["A3A_refuelSession", [_fuel, _fuel, 0, 0, 0, _now, _now, 0]];
+    _vehicle setVariable ["A3A_refuelSession", [_fuel, _fuel, 0, 0, 0, _now, _now]];
 };
 
 _session params [
     "_refFuel", "_lastFuel", "_pendingCost", "_chargedCost",
-    "_chargedLiters", "_lastSampleTime", "_lastRiseTime", "_deniedUntil"
+    "_chargedLiters", "_lastSampleTime", "_lastRiseTime"
 ];
+
+private _deniedUntil = _vehicle getVariable ["A3A_refuelDeniedUntil", 0];
 
 private _delta = _fuel - _lastFuel;
 private _capacity = [_vehicle] call A3A_fnc_fuelTankCapacity;
@@ -86,9 +91,16 @@ if (
     // * Consumo do motor ou escrita de script. Desloca a referencia no mesmo
     // * tanto para que a reconciliacao do fechamento nao veja isso como
     // * divergencia, e re-baseia sem cobrar.
+    if (_delta > 0) then {
+        // * So loga quando a taxa de fato disparou a guarda (delta > 0): isso
+        // * distingue "guarda filtrou um falso positivo" de "motor consumindo
+        // * combustivel normalmente", que tambem cai neste exitWith mas nao
+        // * tem nada de anomalo para diagnosticar.
+        Debug_2("refuelSessionTick: guarda de taxa disparou, litersPerSecond=%1 fractionPerSecond=%2", _litersPerSecond, _fractionPerSecond);
+    };
     _vehicle setVariable ["A3A_refuelSession", [
         _refFuel + _delta, _fuel, _pendingCost, _chargedCost,
-        _chargedLiters, _now, _lastRiseTime, _deniedUntil
+        _chargedLiters, _now, _lastRiseTime
     ]];
 };
 
@@ -117,12 +129,18 @@ if (_cost > _available) then {
     _fuel = _cappedFuel;
 
     if (_now >= _deniedUntil) then {
-        _deniedUntil = _now + REFUEL_DENIED_COOLDOWN;
+        // * setVariable local e sem broadcast, igual A3A_refuelSession: cada
+        // * cliente tem sua propria visao do cooldown.
+        _vehicle setVariable ["A3A_refuelDeniedUntil", _now + REFUEL_DENIED_COOLDOWN];
         [
             localize "STR_A3A_refuel_header",
             format [
                 localize "STR_A3A_refuel_denied",
-                round (player getVariable ["moneyX", 0]),
+                // * _available ja e (moneyX - _pendingCost): o saldo que
+                // * ainda nao esta comprometido com combustivel pendente de
+                // * debito. Mostrar moneyX puro aqui exibiria um saldo que
+                // * nao reflete o que este mesmo tick acabou de consumir.
+                round _available,
                 A3A_faction_civ get "currencySymbol"
             ]
         ] call SCRT_fnc_misc_deniedHint;
@@ -142,5 +160,5 @@ if (_pendingCost >= REFUEL_COMMIT_THRESHOLD) then {
 
 _vehicle setVariable ["A3A_refuelSession", [
     _refFuel, _fuel, _pendingCost, _chargedCost,
-    _chargedLiters, _now, _lastRiseTime, _deniedUntil
+    _chargedLiters, _now, _lastRiseTime
 ]];
