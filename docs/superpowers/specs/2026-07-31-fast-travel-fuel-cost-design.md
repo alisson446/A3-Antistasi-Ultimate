@@ -139,17 +139,22 @@ nenhuma regra de carteira.
 Os três call sites já rodam dentro de `spawn`, então nenhum precisa mudar de
 ambiente para acomodar o `guiMessage`.
 
-### `A3A_fnc_fastTravelRefund` — estorno
+### `A3A_fnc_fastTravelApplyFunds` — movimento de carteira
 
 ```
-Args:   [_amount, _mode]
+Args:   [_delta, _mode]
+        _delta NUMBER — negativo cobra, positivo estorna
+        _mode  STRING — "player" | "rally" | "hc"
 Return: Nothing
 Env:    Any
 ```
 
-Devolve o valor pela mesma carteira que `fastTravelCharge` usaria para aquele
-`_mode`. Existe para manter o conhecimento de carteiras confinado à pasta
-`FastTravel`, em vez de duplicar a escolha jogador-vs-facção no `fastTravelRadio`.
+Único lugar que mapeia `_mode` para carteira. `fastTravelCharge` chama com
+`-_cost`; o cancelamento tardio chama com `+_charged`. Uma função de estorno
+separada duplicaria esse mapeamento, que é justamente o que se quer evitar.
+
+A leitura de saldo fica inline em `fastTravelCharge`: é usada uma única vez, no
+passo 4, e o caminho de estorno não precisa dela.
 
 ## Pontos de inserção
 
@@ -162,17 +167,28 @@ As guardas de validação terminam na linha 140. A linha 142 abre o bloco que ca
 ```sqf
 private _ftMode = ["player", "hc"] select _esHC;
 private _costUnit = if (_esHC) then {_boss} else {player};
-private _charged = [_costUnit, _positionX, _ftMode, [_base] call A3A_fnc_getLocationMarkerName]
-                   call A3A_fnc_fastTravelCharge;
-if (_charged < 0) exitWith { if (!_esHC) then { openMap false } };
+private _destName = markerText _base;
+if (_destName isEqualTo "") then { _destName = _base };
+private _charged = [_costUnit, _positionX, _ftMode, _destName] call A3A_fnc_fastTravelCharge;
+if (_charged < 0) exitWith {};
 ```
+
+O nome do destino vem de `markerText`, não de `A3A_fnc_getLocationMarkerName` —
+essa função **não existe** no repositório, apesar de ser chamada em
+`fn_fastTravelTab.sqf:73`, `fn_hqDialog.sqf:341` e `fn_mapDrawOutpostsEH.sqf:47`.
+É mais uma das funções fantasma da GUI inativa. Marcadores de cidade recebem
+`setMarkerTextLocal` em `fn_initZones.sqf:122`; para marcadores vindos do editor
+que possam ter texto vazio, o fallback é o nome interno do marcador.
 
 Um único ponto cobre os dois modos, porque HC e viagem individual compartilham esse
 bloco. O destino é `_positionX`, o mesmo alvo que a linha 144 usa para o timer, e
 não `getMarkerPos _base`.
 
-O `openMap false` no abort replica a limpeza da linha 234, que o `exitWith`
-pularia. Só se aplica ao caso não-HC, como na linha 234.
+O `exitWith` não precisa fechar o mapa. Ele fica dentro do bloco `then {` aberto
+na linha 142, e em SQF o `exitWith` sai apenas do escopo mais interno que o
+contém — a execução segue para a linha 234, que já faz
+`if (!_esHC) then { openMap false }`. É o mesmo mecanismo de que o `exitWith` da
+linha 171 depende hoje.
 
 `_costUnit` é `player` no caso não-HC, mesmo quando o jogador não é o líder do
 grupo. A linha 144 usa `position _boss` para o timer; para o custo o que importa é
@@ -197,7 +213,7 @@ Nenhum `openMap false` aqui: essa função não abre o mapa.
 `fn_fastTravelRadio.sqf:171-173` tem um cancelamento tardio: quando `limitedFT` é 1
 ou 2 e outro jogador entra num veículo do grupo durante a contagem regressiva, a
 viagem é abortada — mas o dinheiro já saiu. É alcançável em multiplayer. Nesse
-`exitWith`, chamar `A3A_fnc_fastTravelRefund` com `_charged` e `_ftMode`.
+`exitWith`, chamar `[_charged, _ftMode] call A3A_fnc_fastTravelApplyFunds`.
 
 **Requisito de código:** a política de reembolso deve ficar marcada com comentários
 de âncora nos três lugares que a decidem — o ponto que estorna e os dois que
