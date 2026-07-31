@@ -67,15 +67,26 @@ do jogador.
 
 ---
 
-## 2. Desligamento do toggle é no-op
+## 2. Multiplayer: dois jogadores no mesmo posto
 
-O que protege quem não quer a feature. Com `A3U_refuelCostEnabled = 0` no debug
-console (ou Não no setup), abasteça um veículo vazio até 100%.
+Cenário essencial para garantir isolação: um jogador abastece enquanto outro fica
+próximo. Apenas o pagador (motorista do veículo ou jogador vivo mais próximo)
+deve ter seu saldo debitado.
 
-Esperado: abastecimento acontece direto, sem hints, sem débito — comportamento
-idêntico ao de antes desta branch. Saldo fica intacto.
+**Preparação:** dois jogadores humanos na mesma missão. Um dirige até um posto de
+combustível com um veículo vazio (0%). O outro fica estacionado a aproximadamente
+5 metros do primeiro jogador (dentro do raio da bomba, ~30m).
 
-Com `A3U_refuelCostEnabled = 1`, repetir o mesmo abastecimento: agora deve cobrar.
+**Teste:** o primeiro jogador abre o menu de abastecimento e leva o tanque de 0%
+a 100% (ex: Offroad ~60L, custo 60 créditos com `A3U_refuelCostPerLiter = 1`).
+
+Esperado antes: anotar `moneyX` de ambos os jogadores antes de começar.
+Esperado depois: saldo do jogador que abasteceu cai 60 créditos. Saldo do outro
+jogador fica **intacto** — nenhuma cobrança. A regra de pagador é: se o veículo
+tem motorista jogador, cobra dele; senão cobra do jogador vivo mais próximo.
+
+Se ambos os saldos caírem ou se o outro jogador sofrer débito, o sistema errou
+no critério de quem paga.
 
 ---
 
@@ -90,7 +101,7 @@ combustível). Observe o nível de combustível subir para o padrão da garagem 
 isso é restauração, não abastecimento no posto.
 
 Esperado: **nenhuma cobrança** durante a restauração, saldo intacto. Depois,
-dirija até uma bomba de combustível no mapa e abastça de, digamos, 50% para
+dirija até uma bomba de combustível no mapa e abasteça de, digamos, 50% para
 100%. Agora sim, deve cobrar apenas pelo abastecimento da bomba (50% do tanque).
 
 Se a restauração da garagem disparar cobrança, o sistema errou no gatilho de
@@ -130,7 +141,7 @@ você consegue 50 litros antes de ficar sem dinheiro. Abra o menu de abastecimen
 
 Esperado: o tanque sobe até um ponto (aproximadamente 55%, dependendo da
 capacidade do tanque). Depois, o abastecimento para. Um `deniedHint` aparece
-citando o custo e saldo (**sem** som — isso é para a revisão). O saldo cai a
+citando o custo e saldo **com som de falha** (`A3AP_UiFailure`). O saldo cai a
 zero. Se tentar abrir o menu novamente, nada entra; a bomba não funciona sem
 dinheiro.
 
@@ -174,7 +185,7 @@ cobrança.
 
 **Teste:** defina `player setVariable ["moneyX", 1000, true]` e `A3U_refuelCostPerLiter = 1`.
 Dirija para uma bomba com um veículo vazio (ex: Offroad, capacidade ~60 litros).
-Abra o menu de abastecimento e lleve de 0% a 100%.
+Abra o menu de abastecimento e leve de 0% a 100%.
 
 Esperado: cobrança de 60 créditos (60 litros × 1 crédito/litro). Saldo fica em
 940 créditos. O cálculo deve refletir **apenas** o intervalo de 0% a 100% para
