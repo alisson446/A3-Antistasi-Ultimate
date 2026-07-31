@@ -21,7 +21,8 @@
 - **Cabeçalho de função**: todo `.sqf` novo começa com o bloco de comentário no formato de `A3A/addons/core/functions/FastTravel/fn_fastTravelCost.sqf` (Maintainer, descrição, Arguments, Return Value, Scope, Environment, Public, Dependencies, Example), seguido de `#include "..\..\script_component.hpp"` e `FIX_LINE_NUMBERS()`.
 - **Nome da variável de estado**: `A3A_refuelSession`, sempre `setVariable` **local** (sem terceiro argumento de broadcast).
 - **Ordem do array de estado**, idêntica em todos os arquivos que a leem:
-  `[_refFuel, _lastFuel, _pendingCost, _chargedCost, _chargedLiters, _lastSampleTime, _lastRiseTime, _deniedUntil]`
+  `[_refFuel, _lastFuel, _pendingCost, _chargedCost, _chargedLiters, _lastSampleTime, _lastRiseTime]`
+- **Cooldown do aviso de saldo insuficiente**: `_deniedUntil` não entra no array acima. Vive em variável própria do veículo, `A3A_refuelDeniedUntil`, também `setVariable` local (sem broadcast). Fica fora do array porque o fechamento da sessão apaga `A3A_refuelSession` inteiro, e o cooldown precisa sobreviver a isso — senão o hint de saldo insuficiente reaparece a cada `REFUEL_IDLE_TIMEOUT` em vez de a cada `REFUEL_DENIED_COOLDOWN`.
 
 ## Estrutura de arquivos
 
@@ -311,7 +312,8 @@ git commit -m "feat: Funcoes puras de custo de abastecimento"
 - Consumes: `A3A_fnc_fuelTankCapacity`, `A3A_fnc_refuelCost` (Task 2); `A3A_fnc_resourcesPlayer`, `SCRT_fnc_misc_deniedHint` (já existentes)
 - Produces:
   - `[_vehicle] call A3A_fnc_refuelSessionTick` → Nothing
-  - a variável local `A3A_refuelSession` no veículo, no formato `[_refFuel, _lastFuel, _pendingCost, _chargedCost, _chargedLiters, _lastSampleTime, _lastRiseTime, _deniedUntil]`, lida pelas Tasks 4 e 5
+  - a variável local `A3A_refuelSession` no veículo, no formato `[_refFuel, _lastFuel, _pendingCost, _chargedCost, _chargedLiters, _lastSampleTime, _lastRiseTime]`, lida pelas Tasks 4 e 5
+  - a variável local `A3A_refuelDeniedUntil` no veículo, cooldown do aviso de saldo insuficiente. Fica fora do array acima de propósito, para sobreviver ao fechamento da sessão
 
 - [ ] **Step 1: Adicionar o container de textos**
 
@@ -390,7 +392,10 @@ private _fuel = fuel _vehicle;
 private _now = time;
 
 // * Estado da sessao: [_refFuel, _lastFuel, _pendingCost, _chargedCost,
-// * _chargedLiters, _lastSampleTime, _lastRiseTime, _deniedUntil].
+// * _chargedLiters, _lastSampleTime, _lastRiseTime]. O cooldown do aviso de
+// * saldo insuficiente NAO mora aqui: vive em variavel propria do veiculo
+// * (A3A_refuelDeniedUntil) para sobreviver ao fechamento da sessao, que
+// * apaga este array inteiro.
 // * setVariable local de proposito - cada cliente tem a sua propria visao.
 private _session = _vehicle getVariable ["A3A_refuelSession", []];
 
@@ -398,13 +403,15 @@ if (_session isEqualTo []) exitWith {
     // * Primeira amostra so estabelece a linha de base. Nunca cobra: nao ha
     // * delta anterior para comparar, e cobrar aqui seria cobrar por
     // * combustivel que ja estava no tanque.
-    _vehicle setVariable ["A3A_refuelSession", [_fuel, _fuel, 0, 0, 0, _now, _now, 0]];
+    _vehicle setVariable ["A3A_refuelSession", [_fuel, _fuel, 0, 0, 0, _now, _now]];
 };
 
 _session params [
     "_refFuel", "_lastFuel", "_pendingCost", "_chargedCost",
-    "_chargedLiters", "_lastSampleTime", "_lastRiseTime", "_deniedUntil"
+    "_chargedLiters", "_lastSampleTime", "_lastRiseTime"
 ];
+
+private _deniedUntil = _vehicle getVariable ["A3A_refuelDeniedUntil", 0];
 
 private _delta = _fuel - _lastFuel;
 private _capacity = [_vehicle] call A3A_fnc_fuelTankCapacity;
@@ -424,9 +431,16 @@ if (
     // * Consumo do motor ou escrita de script. Desloca a referencia no mesmo
     // * tanto para que a reconciliacao do fechamento nao veja isso como
     // * divergencia, e re-baseia sem cobrar.
+    if (_delta > 0) then {
+        // * So loga quando a taxa de fato disparou a guarda (delta > 0): isso
+        // * distingue "guarda filtrou um falso positivo" de "motor consumindo
+        // * combustivel normalmente", que tambem cai neste exitWith mas nao
+        // * tem nada de anomalo para diagnosticar.
+        Debug_2("refuelSessionTick: guarda de taxa disparou, litersPerSecond=%1 fractionPerSecond=%2", _litersPerSecond, _fractionPerSecond);
+    };
     _vehicle setVariable ["A3A_refuelSession", [
         _refFuel + _delta, _fuel, _pendingCost, _chargedCost,
-        _chargedLiters, _now, _lastRiseTime, _deniedUntil
+        _chargedLiters, _now, _lastRiseTime
     ]];
 };
 
@@ -455,12 +469,18 @@ if (_cost > _available) then {
     _fuel = _cappedFuel;
 
     if (_now >= _deniedUntil) then {
-        _deniedUntil = _now + REFUEL_DENIED_COOLDOWN;
+        // * setVariable local e sem broadcast, igual A3A_refuelSession: cada
+        // * cliente tem sua propria visao do cooldown.
+        _vehicle setVariable ["A3A_refuelDeniedUntil", _now + REFUEL_DENIED_COOLDOWN];
         [
             localize "STR_A3A_refuel_header",
             format [
                 localize "STR_A3A_refuel_denied",
-                round (player getVariable ["moneyX", 0]),
+                // * _available ja e (moneyX - _pendingCost): o saldo que
+                // * ainda nao esta comprometido com combustivel pendente de
+                // * debito. Mostrar moneyX puro aqui exibiria um saldo que
+                // * nao reflete o que este mesmo tick acabou de consumir.
+                round _available,
                 A3A_faction_civ get "currencySymbol"
             ]
         ] call SCRT_fnc_misc_deniedHint;
@@ -480,7 +500,7 @@ if (_pendingCost >= REFUEL_COMMIT_THRESHOLD) then {
 
 _vehicle setVariable ["A3A_refuelSession", [
     _refFuel, _fuel, _pendingCost, _chargedCost,
-    _chargedLiters, _now, _lastRiseTime, _deniedUntil
+    _chargedLiters, _now, _lastRiseTime
 ]];
 ```
 
@@ -632,8 +652,10 @@ private _capacity = [_vehicle] call A3A_fnc_fuelTankCapacity;
 private _realLiters = (((fuel _vehicle) - _refFuel) max 0) * _capacity;
 
 // * round uma vez so, sobre a diferenca: _chargedCost ja e inteiro (o tick
-// * sempre debita floor) e _pendingCost e o resto fracionario nunca debitado.
-private _settle = round ((_realLiters * _perLiter) - _chargedCost - _pendingCost);
+// * sempre debita floor). _pendingCost NAO entra nesta conta: e o resto
+// * fracionario ainda nao debitado, dinheiro que nunca saiu da carteira do
+// * jogador, entao subtrai-lo aqui perdoaria uma divida que ainda existe.
+private _settle = round ((_realLiters * _perLiter) - _chargedCost);
 
 if (_settle isNotEqualTo 0) then { [-_settle] call A3A_fnc_resourcesPlayer };
 

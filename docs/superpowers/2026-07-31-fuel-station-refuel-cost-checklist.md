@@ -13,10 +13,14 @@ A ordem abaixo não é arbitrária: os itens 1 e 2 são os de maior risco — se
 sistema de cobrança não dispara e se o toggle de desligamento não funciona, os
 restantes nunca serão verificados. Itens 3–7 testam isolação entre cenários (um
 não quebra o outro). Itens 8–10 testam escala e cobrança correta. Itens 11–12
-testam toggles e configurações.
+testam toggles e configurações. Itens 13–14 foram adicionados na revisão final
+do plano para expor, respectivamente, o bug de reconciliação corrigido nessa
+revisão (abastecimento pequeno, abaixo do limiar de commit) e um falso positivo
+em potencial das guardas de taxa (tanque grande enchendo rápido).
 
-Referências: spec em `docs/superpowers/specs/2026-07-31-fuel-economy-design.md`,
-plano em `docs/superpowers/plans/2026-07-31-fuel-economy.md`.
+Referências: spec em
+`docs/superpowers/specs/2026-07-31-fuel-station-refuel-cost-design.md`, plano em
+`docs/superpowers/plans/2026-07-31-fuel-station-refuel-cost.md`.
 
 ---
 
@@ -26,20 +30,20 @@ Na tela de setup, dropdown de tipo de parâmetros na opção **4** (agrupa Exten
 Experimental, Development). Sob OPÇÕES EXPERIMENTAIS devem aparecer duas
 entradas novas:
 
-- Refuel: charge cost — Não/Sim, default Sim
-- Refuel: cost per liter — 0/1/2/5/10, default 1
+- **Fuel Stations: charge for refuelling** (`A3U_refuelCostEnabled`) — Não/Sim, default Sim
+- **Fuel Stations: cost per litre** (`A3U_refuelCostPerLiter`) — 0/1/2/3/5/10, default 2
 
-**Falha:** qualquer texto aparecendo como `STR_params_refCost...` cru significa
+**Falha:** qualquer texto aparecendo como `STR_params_refuelCost...` cru significa
 chave de stringtable não encontrada.
 
 Com a missão rodando, no debug console:
 
 ```sqf
-[A3U_refuelCostEnabled, A3U_refuelCostPerLiter]
+hint str [A3U_refuelCostEnabled, A3U_refuelCostPerLiter]
 ```
 
-Esperado: `[1,1]` (ou `[1,2]`, `[1,5]`, `[1,10]`, `[1,0]` conforme as
-configurações escolhidas).
+Esperado: `[1,2]` com os defaults (ou outra combinação de `{0,1,2,3,5,10}` para
+o preço, conforme as configurações escolhidas no setup).
 
 ---
 
@@ -47,23 +51,29 @@ configurações escolhidas).
 
 Este é o item mais provável de falhar e o mais difícil de diagnosticar depois.
 
-A sessão de abastecimento só deve iniciar quando `setFuel` é invocado — não por
-mera proximidade do jogador com a bomba de combustível. Se o sistema cobrasse por
-proximidade, qualquer jogador estacionado ao lado da bomba levaria débitos
-constantes.
+Não há interceptação de nenhum "comando de abastecimento": a arquitetura real
+(ver seções "Arquitetura" e "Fluxo do tick" da spec) é um monitor de cliente que
+acorda quando o jogador está perto de um posto (`REFUEL_STATION_RANGE`, 40 m) e
+amostra `fuel` dos veículos candidatos a cada segundo. A sessão de um veículo
+é criada na primeira amostra em que ele é visto perto do posto — essa primeira
+amostra só estabelece a linha de base (`_refFuel`/`_lastFuel`) e nunca cobra.
+A partir da segunda amostra, qualquer aumento de `fuel` (delta positivo, dentro
+das taxas de guarda) vira cobrança. A proximidade sozinha não gera custo porque,
+sem abastecimento de verdade, `fuel` não sobe e o delta é zero — não porque
+exista um "comando" separado esperado.
 
 **Teste:** com dinheiro suficiente, estacione um veículo **cheio** ao lado de
-uma bomba de combustível. Fique próximo do veículo (dentro do raio de 30 metros)
-por trinta segundos. Não abra nenhum menu de abastecimento.
+uma bomba de combustível. Fique próximo do veículo (dentro dos 40 m do posto e
+25 m do veículo) por trinta segundos. Não abasteça.
 
 Esperado: **nenhuma cobrança**, nenhum hint, saldo intacto. O veículo continua
 cheio.
 
-**Se receber débitos sem abrir o menu:** foi a inicialização que errou —
-a sessão está disparando por proximidade em vez de por `setFuel`. Procure em
-`A3A/addons/.../functions/.../fn_*.sqf` pelo inicializador da sessão; deve
-aguardar explicitamente um comando de abastecimento, não apenas a presença
-do jogador.
+**Se receber débitos sem abastecer:** o monitor está detectando um delta de
+`fuel` que não existe, ou a guarda de taxa (`REFUEL_MAX_LPS`/
+`REFUEL_MAX_FRACTION_PER_SEC`) está deixando passar um falso positivo. Procure
+em `A3A/addons/core/functions/Refuel/fn_refuelSessionTick.sqf` o cálculo de
+`_delta` e as guardas de taxa.
 
 ---
 
@@ -75,7 +85,8 @@ deve ter seu saldo debitado.
 
 **Preparação:** dois jogadores humanos na mesma missão. Um dirige até um posto de
 combustível com um veículo vazio (0%). O outro fica estacionado a aproximadamente
-5 metros do primeiro jogador (dentro do raio da bomba, ~30m).
+5 metros do primeiro jogador (ambos dentro dos 40 m do posto que ativam o
+monitor em cada cliente — `REFUEL_STATION_RANGE`).
 
 **Teste:** o primeiro jogador abre o menu de abastecimento e leva o tanque de 0%
 a 100% (ex: Offroad ~60L, custo 60 créditos com `A3U_refuelCostPerLiter = 1`).
@@ -120,7 +131,9 @@ subindo).
 **Teste:** estacione um veículo a 5 metros de uma bomba, com 0% de combustível
 e `A3U_refuelCostPerLiter = 1`. Abra o menu de abastecimento e espere o tanque
 começar a encher. Assim que vir o nível subir (cerca de 3-5 segundos), dirija
-para mais de 30 metros de distância (raio padrão).
+para mais de 40 metros de distância da bomba — além do `REFUEL_STATION_RANGE`
+(40 m), que é o maior dos dois raios da mecânica e garante que o monitor pare
+de observar o posto.
 
 Esperado: a sessão fecha imediatamente. O resumo de cobrança deve bater com os
 litros que entraram na bomba (em créditos: litros × taxa).
@@ -168,9 +181,10 @@ Caminhões-tanque (p.ex: `O_Fuel_Truck_F`) podem abastecer veículos a distânci
 sem estar acoplados a nenhuma bomba de combustível do mapa. Essa fonte de
 combustível **não deve gerar cobrança**.
 
-**Teste:** estacione um caminhão-tanque e um veículo vazio a mais de 30 metros de
-qualquer bomba de combustível (no mapa, longe de tudo). Use o ACE (ou script)
-para abastecer o veículo vazio a partir do caminhão. Observe o tanque subir.
+**Teste:** estacione um caminhão-tanque e um veículo vazio a mais de 40 metros de
+qualquer bomba de combustível (além do `REFUEL_STATION_RANGE`, no mapa, longe de
+tudo). Use o ACE (ou script) para abastecer o veículo vazio a partir do
+caminhão. Observe o tanque subir.
 
 Esperado: **nenhuma cobrança**, saldo intacto. O abastecimento é grátis. O sistema
 deve distinguir entre "bomba de combustível do mapa" (cobrada) e "caminhão-tanque
@@ -245,7 +259,12 @@ A UI de parâmetros mostra `A3U_refuelCostEnabled = 0` (ou pode não mostrar o
 parâmetro se foi ocultado). O comportamento é idêntico ao da versão **antes**
 desta branch — como se a feature não existisse.
 
-Nenhum `Info` no RPT citando custo ou cobrança.
+O monitor (`fn_refuelMonitor.sqf`) **loga** uma linha `Info` no RPT ao
+constatar o toggle desligado: `"refuelMonitor: cobranca de abastecimento
+desligada nos parametros"`. Isso é esperado e correto — é o monitor
+confirmando que não iniciou por causa do parâmetro, não um vazamento de
+comportamento. A ausência dessa linha é que seria suspeita (indicaria que o
+monitor iniciou mesmo com o toggle em Não).
 
 Se você vir hints de "saldo insuficiente" ou preços aparecendo mesmo com o toggle
 desligado, a lógica de desativação errou.
@@ -261,12 +280,63 @@ decidir não cobrar. O sistema deve reconhecer isso explicitamente.
 Abasteça um veículo vazio de 0% a 100%. Observe o RPT.
 
 Esperado: abastecimento é de graça, sem hints. Procure no RPT (não no console
-in-game, é no arquivo `rpt`) por uma linha `Info` (não `Warning` ou `Error`)
-citando o custo zero — algo como "taxa configurada em 0, nenhuma cobrança".
+in-game, é no arquivo `rpt`) pela linha `Info` de `fn_refuelMonitor.sqf`:
+`"refuelMonitor: preco por litro zerado, monitor nao iniciado"`.
 
-O saldo do jogador fica intacto. Se o RPT **não** contiver uma marca de `Info`,
+O saldo do jogador fica intacto. Se o RPT **não** contiver essa marca de `Info`,
 o sistema pode estar silenciosamente ignorando taxa = 0 em vez de reconhecê-lo
 como intencional.
+
+---
+
+## 13. Abastecimento pequeno, abaixo do limiar de commit (25 créditos)
+
+Item adicionado na revisão final do plano: expôs um bug real na fórmula de
+reconciliação de `fn_refuelSessionClose.sqf`, já corrigido, mas que só
+aparece quando o custo total da sessão fica abaixo de `REFUEL_COMMIT_THRESHOLD`
+(25 créditos) — ou seja, quando `_chargedCost` nunca sai de zero durante a
+sessão inteira e todo o custo fica em `_pendingCost` até o fechamento.
+
+**Teste:** com `A3U_refuelCostPerLiter = 2`, escolha um veículo cujo tanque
+some poucos litros por segundo de abastecimento (ex: um carro pequeno) e
+abasteça por uma janela curta o bastante para o custo total ficar abaixo de 25
+créditos — por exemplo, ~6 litros a 2 créditos/litro = 12 créditos. Pare de
+abastecer (saia do raio ou espere o `REFUEL_IDLE_TIMEOUT`) antes que o
+acumulado passe de 25.
+
+Esperado: o hint de resumo aparece com o custo total correto (proporcional aos
+litros que de fato entraram) e o saldo do jogador cai exatamente esse valor.
+
+**Se nada for cobrado, ou o valor cobrado for zero:** a fórmula de
+reconciliação voltou a subtrair `_pendingCost` do acerto (o bug que esta
+revisão corrigiu) — confira `fn_refuelSessionClose.sqf`.
+
+---
+
+## 14. Tanque grande enchendo rápido: guardas de taxa não devem disparar por engano
+
+Item adicionado na revisão final do plano. As guardas de taxa
+(`REFUEL_MAX_LPS` = 40 L/s, `REFUEL_MAX_FRACTION_PER_SEC` = 0.4) existem para
+distinguir abastecimento real de um `setFuel` de script (garagem, spawn, load
+de save), mas erram para o lado de "não cobrar" em caso de dúvida — um veículo
+de tanque grande que encha rápido de verdade (ex: um caminhão-tanque
+reabastecendo a si mesmo, ou um veículo de API grande) pode ultrapassar
+`REFUEL_MAX_LPS` e ser tratado como falso positivo, saindo de graça.
+
+**Teste:** abasteça no posto um veículo de tanque grande (ex: caminhão-tanque,
+ou outro veículo com `fuelCapacity`/`ace_refuel_fuelCapacity` bem acima de
+~100 L) e observe a taxa de enchimento. Se o RPT tiver `LogLevel` alto o
+bastante para nível `Debug`, procure pela linha de
+`fn_refuelSessionTick.sqf`: `"refuelSessionTick: guarda de taxa disparou,
+litersPerSecond=... fractionPerSecond=..."` — ela loga sempre que a guarda
+descarta uma amostra com delta positivo, permitindo distinguir "guarda filtrou
+um falso positivo real" de "a cobrança quebrou".
+
+Esperado: se a taxa de enchimento real fica abaixo dos limiares, a cobrança
+acontece normalmente, proporcional aos litros. Se a guarda disparar (linha de
+`Debug` aparece no RPT) para um abastecimento genuíno de posto, é sinal de que
+os limiares (`REFUEL_MAX_LPS`/`REFUEL_MAX_FRACTION_PER_SEC`) estão calibrados
+baixo demais para aquele veículo — registre o veículo e a taxa observada.
 
 ---
 
@@ -278,10 +348,16 @@ reembolsado. Uma vez que o combustível entra no tanque, o custo fica.
 
 - **Saldo zero durante o abastecimento:** o tanque pára no ponto onde o dinheiro
   acabou. Nenhum reembolso (o combustível que entrou já foi pago).
-- **Perda de conexão ou crash no meio:** a sessão fecha e o custo final bate com
-  o que já entrou. Nenhum reembolso.
 - **Combustível que o motor consome durante o abastecimento:** a reconciliação
   desconta o consumo de motor da cobrança. Nenhum reembolso além disso.
+
+**Limitação conhecida, não um comportamento garantido:** perda de conexão ou
+crash do cliente no meio de uma sessão **não** fecha a sessão nem aciona a
+reconciliação — nada no código roda nesse caso. `_pendingCost` (o resto
+fracionário ainda não debitado) é simplesmente perdido a favor do jogador; o
+que já tinha sido debitado em bloco (`_chargedCost`) permanece cobrado. Não
+teste isso esperando que "o custo bate" — o resultado esperado é justamente
+que o pendente não seja cobrado.
 
 ---
 
@@ -313,3 +389,5 @@ Quando estiver testando, marque cada item com `[x]` enquanto executa:
 - [ ] 10. Escalas de preço: carro vs. caminhão (mesma taxa, mesma faixa)
 - [ ] 11. `A3U_refuelCostEnabled` em Não: comportamento pré-feature
 - [ ] 12. `A3U_refuelCostPerLiter` em 0 com o toggle em Sim: de graça com `Info`
+- [ ] 13. Abastecimento pequeno, abaixo do limiar de commit (25 créditos)
+- [ ] 14. Tanque grande enchendo rápido: guardas de taxa não disparam por engano

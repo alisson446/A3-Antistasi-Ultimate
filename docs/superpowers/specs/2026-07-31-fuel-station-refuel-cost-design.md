@@ -183,14 +183,21 @@ _veh setVariable ["A3A_refuelSession", [
     _chargedCost,    // créditos já debitados nesta sessão
     _chargedLiters,  // litros já cobrados nesta sessão
     _lastSampleTime, // instante da amostra anterior, para calcular a taxa em L/s
-    _lastRiseTime,   // instante da última subida de fuel
-    _deniedUntil     // cooldown do aviso de saldo insuficiente
+    _lastRiseTime    // instante da última subida de fuel
 ]];
 ```
 
 Escolhido em vez de um hashmap global porque morre junto com o veículo, é
 naturalmente por cliente (cada jogador tem sua própria visão) e não precisa de
 código de limpeza próprio.
+
+O cooldown do aviso de saldo insuficiente (`_deniedUntil`) **não** mora nesse
+array: vive em variável própria do veículo (`A3A_refuelDeniedUntil`, também
+`setVariable` local). Se ficasse no array, o fechamento da sessão — que apaga
+`A3A_refuelSession` inteiro — perderia o cooldown junto, e uma sessão nova
+recomeçaria com o aviso liberado. Com saldo zero e a bomba ligada, isso faria o
+hint reaparecer a cada `REFUEL_IDLE_TIMEOUT` (o intervalo de fechamento por
+inatividade) em vez de a cada `REFUEL_DENIED_COOLDOWN` como pretendido.
 
 ## Fluxo do tick
 
@@ -260,12 +267,17 @@ No fechamento:
 ```sqf
 _litrosReais  = ((fuel _veh - _refFuel) max 0) * ([_veh] call A3A_fnc_fuelTankCapacity);
 _custoDevido  = _litrosReais * A3U_refuelCostPerLiter;
-_acerto       = round (_custoDevido - _chargedCost - _pendingCost);
+_acerto       = round (_custoDevido - _chargedCost);
 ```
 
 O `round` incide uma única vez, sobre a diferença: `_chargedCost` já é inteiro (o
-passo 8 sempre debita `floor`) e `_pendingCost` é o resto fracionário ainda não
-debitado, então arredondar aqui fecha a conta inteira da sessão de uma vez.
+passo 8 sempre debita `floor`), então arredondar aqui fecha a conta inteira da
+sessão de uma vez. `_pendingCost` **não** entra nesta subtração: é o resto
+fracionário ainda não debitado, dinheiro que nunca saiu da carteira do jogador.
+Subtraí-lo perdoaria uma dívida que ainda existe — todo abastecimento abaixo do
+limiar de commit (`REFUEL_COMMIT_THRESHOLD`) sairia de graça, e todo
+abastecimento maior perderia o resíduo fracionário, com o erro podendo ir nos
+dois sentidos.
 
 `_acerto` negativo estorna, positivo debita, ambos por `A3A_fnc_resourcesPlayer`. O
 jogador termina pagando pelos litros que o tanque de fato ganhou, medidos no
@@ -300,8 +312,19 @@ pelo combustível realmente medido.
 - **Caminhão-tanque estacionado dentro dos 25 m de uma bomba**: o abastecimento é
   cobrado como se fosse do posto. Aceito. Distinguir a fonte exigiria ler estado
   interno do ACE, que é a dependência que esta arquitetura evita.
-- **IA e civis abastecendo sem jogador por perto**: o passo 3 não encontra pagador,
-  então nada acontece — nem cobrança, nem corte.
+- **IA e civis abastecendo perto de um posto**: a regra do passo 3 (motorista
+  jogador, senão o jogador vivo mais próximo do veículo) resolve um pagador em
+  qualquer caso onde o monitor está ativo — inclusive para veículo de IA ou
+  civil sem motorista jogador, desde que exista um jogador vivo dentro dos
+  `REFUEL_STATION_RANGE` (40 m) do posto que fizeram o monitor acordar. Não há
+  cenário de "sem jogador por perto" nesse caminho: o monitor só roda quando um
+  jogador já está perto o bastante do posto para acordá-lo. Na prática, o
+  jogador mais próximo do posto acaba pagando por qualquer combustível que
+  suba em qualquer veículo dentro dos 25 m da bomba, mesmo que ele não seja o
+  motorista. Característica aceita da arquitetura, não uma lacuna: resolver o
+  pagador sem depender de proximidade exigiria estado compartilhado entre
+  clientes, que esta arquitetura evita de propósito (ver "Pagador em
+  multiplayer").
 - **Veículo cheio**: delta zero, nenhum custo.
 
 ## Parâmetros
@@ -338,7 +361,9 @@ Todas em `A3A/addons/scrt/Stringtable.xml`, onde já vivem os `STR_params_*` e o
 - `STR_params_refuelCostPerLiter` e `_desc`;
 - `STR_A3A_refuel_header` — título dos dois hints;
 - `STR_A3A_refuel_charged` — litros abastecidos, créditos cobrados, saldo restante;
-- `STR_A3A_refuel_denied` — créditos que faltaram e saldo do jogador.
+- `STR_A3A_refuel_denied` — dois placeholders: o saldo disponível do jogador
+  (já descontando o pendente ainda não debitado) e o símbolo da moeda. Não há
+  um segundo valor para "créditos que faltaram" — só o saldo atual.
 
 Símbolo de moeda sempre via `A3A_faction_civ get "currencySymbol"`, nunca literal.
 
