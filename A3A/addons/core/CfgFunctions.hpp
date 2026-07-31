@@ -357,6 +357,13 @@ class CfgFunctions
             class vehicleDeletedEH {};
         };
 
+        class FastTravel {
+            file = QPATHTOFOLDER(functions\FastTravel);
+            class fastTravelApplyFunds {};
+            class fastTravelCharge {};
+            class fastTravelCost {};
+        };
+
         class Garrison {
             file = QPATHTOFOLDER(functions\Garrison);
             class addGarrison {};
