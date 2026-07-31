@@ -8273,6 +8273,30 @@
                 <Korean>불안정하거나 자주 변경될 수 있는 실험적 기능입니다. 테스트 용도로 사용하세요.</Korean>
                 <French>Fonctionnalités expérimentales pouvant être instables ou évoluer fréquemment ; à utiliser pour les tests.</French>
             </Key>
+            <Key ID="STR_params_ftCostPlayer">
+                <Original>Fast Travel: charge fuel cost</Original>
+            </Key>
+            <Key ID="STR_params_ftCostPlayer_desc">
+                <Original>Charges the player's wallet for fast travel, based on distance and vehicle type.</Original>
+            </Key>
+            <Key ID="STR_params_ftCostRallyPoint">
+                <Original>Fast Travel: charge for rally point</Original>
+            </Key>
+            <Key ID="STR_params_ftCostRallyPoint_desc">
+                <Original>Charges the player's wallet when travelling to the rally point.</Original>
+            </Key>
+            <Key ID="STR_params_ftCostHighCommand">
+                <Original>Fast Travel: charge for High Command</Original>
+            </Key>
+            <Key ID="STR_params_ftCostHighCommand_desc">
+                <Original>Charges faction funds when moving a High Command group.</Original>
+            </Key>
+            <Key ID="STR_params_ftCostPerKm">
+                <Original>Fast Travel: cost per km</Original>
+            </Key>
+            <Key ID="STR_params_ftCostPerKm_desc">
+                <Original>Base credits charged per kilometre travelled, before the vehicle multiplier.</Original>
+            </Key>
             <Key ID="STR_params_development">
                 <Original>DEVELOPMENT OPTIONS</Original>
                 <Russian>НАСТРОЙКИ ДЛЯ РАЗРАБОТКИ</Russian>

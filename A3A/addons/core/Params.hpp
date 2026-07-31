@@ -3094,6 +3094,38 @@ class Params
         texts[] = {$STR_antistasi_dialogs_generic_button_no_text, $STR_antistasi_dialogs_generic_button_yes_text};
         default = 1;
     };
+    class A3U_ftCostPlayer : ExperimentalParams
+    {
+        title = $STR_params_ftCostPlayer;
+        tooltip = $STR_params_ftCostPlayer_desc;
+        values[] = {0, 1};
+        texts[] = {$STR_antistasi_dialogs_generic_button_no_text, $STR_antistasi_dialogs_generic_button_yes_text};
+        default = 1;
+    };
+    class A3U_ftCostRallyPoint : ExperimentalParams
+    {
+        title = $STR_params_ftCostRallyPoint;
+        tooltip = $STR_params_ftCostRallyPoint_desc;
+        values[] = {0, 1};
+        texts[] = {$STR_antistasi_dialogs_generic_button_no_text, $STR_antistasi_dialogs_generic_button_yes_text};
+        default = 1;
+    };
+    class A3U_ftCostHighCommand : ExperimentalParams
+    {
+        title = $STR_params_ftCostHighCommand;
+        tooltip = $STR_params_ftCostHighCommand_desc;
+        values[] = {0, 1};
+        texts[] = {$STR_antistasi_dialogs_generic_button_no_text, $STR_antistasi_dialogs_generic_button_yes_text};
+        default = 1;
+    };
+    class A3U_ftCostPerKm : ExperimentalParams
+    {
+        title = $STR_params_ftCostPerKm;
+        tooltip = $STR_params_ftCostPerKm_desc;
+        values[] = {5, 10, 15, 20, 30, 50};
+        texts[] = {"5", "10", "15", "20", "30", "50"};
+        default = 20;
+    };
 
     class DevelopmentParamsSpacer : AllParams
     {
