@@ -206,6 +206,7 @@ header compartilhado:
 | `REFUEL_VEHICLE_RANGE` | 25 m | posto → veículo acompanhado | `fn_refuelMonitor.sqf` |
 | `REFUEL_IDLE_TIMEOUT` | 3 s | sem subida, fecha a sessão | `fn_refuelMonitor.sqf` |
 | `REFUEL_MAX_LPS` | 40 L/s | acima disso é `setFuel` de script | `fn_refuelSessionTick.sqf` |
+| `REFUEL_MAX_FRACTION_PER_SEC` | 0.4 | idem, para tanque pequeno | `fn_refuelSessionTick.sqf` |
 | `REFUEL_COMMIT_THRESHOLD` | 25 créditos | pendente que dispara o débito | `fn_refuelSessionTick.sqf` |
 | `REFUEL_DENIED_COOLDOWN` | 15 s | entre avisos de saldo insuficiente | `fn_refuelSessionTick.sqf` |
 
@@ -218,10 +219,10 @@ header compartilhado:
 4. **Delta.** `fuel _veh` menos `_lastFuel`.
    - `<= 0` (motor consumindo): desloca `_refFuel` no mesmo tanto, re-baseia
      `_lastFuel`, não cobra;
-   - taxa acima de `REFUEL_MAX_LPS`, medida como litros do delta divididos pelo
-     tempo desde `_lastSampleTime` (e não pelo `REFUEL_TICK` nominal, que não se
-     sustenta sob queda de FPS): trata como `setFuel` de script (garagem, spawn,
-     load de save), desloca `_refFuel`, re-baseia, não cobra;
+   - taxa acima de `REFUEL_MAX_LPS` **ou** de `REFUEL_MAX_FRACTION_PER_SEC`, ambas
+     medidas contra o tempo desde `_lastSampleTime` (e não contra o `REFUEL_TICK`
+     nominal, que não se sustenta sob queda de FPS): trata como `setFuel` de script
+     (garagem, spawn, load de save), desloca `_refFuel`, re-baseia, não cobra;
    - `> 0` dentro da taxa: segue para o passo 5.
 5. **Custo.** `[_veh, _delta] call A3A_fnc_refuelCost` entra em `_pendingCost`;
    os litros entram em `_chargedLiters`. `_lastRiseTime` recebe o instante atual.
@@ -289,9 +290,13 @@ pelo combustível realmente medido.
 
 ## Guardas e falsos positivos
 
-- **`setFuel` por script** (garagem, spawn de veículo, load de save): pega pela taxa
-  acima de `REFUEL_MAX_LPS`. Abastecimento real fica muito abaixo disso em qualquer
-  veículo.
+- **`setFuel` por script** (garagem, spawn de veículo, load de save): pega pelas duas
+  taxas. `REFUEL_MAX_LPS` cobre tanque grande; `REFUEL_MAX_FRACTION_PER_SEC` cobre
+  tanque pequeno, onde encher tudo de uma vez são poucos litros e passaria pelo
+  limite em litros. O par erra para o lado seguro: um veículo de tanque muito pequeno
+  abastecido muito rápido pode ser lido como salto de script e sair de graça — poucas
+  dezenas de créditos —, enquanto o erro oposto seria cobrar por combustível que o
+  jogador não comprou.
 - **Caminhão-tanque estacionado dentro dos 25 m de uma bomba**: o abastecimento é
   cobrado como se fosse do posto. Aceito. Distinguir a fonte exigiria ler estado
   interno do ACE, que é a dependência que esta arquitetura evita.
