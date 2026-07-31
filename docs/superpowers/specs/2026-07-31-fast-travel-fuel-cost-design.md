@@ -220,7 +220,13 @@ Nenhum `openMap false` aqui: essa função não abre o mapa.
 
 `fn_fastTravelRadio.sqf:171-173` tem um cancelamento tardio: quando `limitedFT` é 1
 ou 2 e outro jogador entra num veículo do grupo durante a contagem regressiva, a
-viagem é abortada — mas o dinheiro já saiu. É alcançável em multiplayer. Nesse
+viagem é abortada — mas o dinheiro já saiu. Só é alcançável em modo High Command:
+fora do HC, `_checkForPlayer` só fica `true` quando `limitedFT` é 1 ou 2 (linha 29),
+e nesse caso as guardas das linhas 113/124 já barram o `!_isValidTargetLocation`
+antes deste ponto, então quem sobrevive até aqui sempre tem `_isValidTargetLocation`
+verdadeiro. Em modo HC essas guardas ficam desligadas (`_checkForPlayer` começa
+`false`) e só o teste tardio da linha 179 pode religá-las, então o cancelamento
+tardio — e o reembolso — só acontece com um grupo de HC. Nesse
 `exitWith`, chamar `[_charged, _ftMode] call A3A_fnc_fastTravelApplyFunds`.
 
 **Requisito de código:** a política de reembolso deve ficar marcada com comentários
@@ -300,7 +306,7 @@ gastar dinheiro.
 | 5 | Modo HC | debita `resourcesFIA`, `moneyX` intacto |
 | 6 | Cada toggle em Não | viagem correspondente de graça, sem diálogo |
 | 7 | `A3U_ftCostPerKm` em 5 e em 50 | custo escala linear |
-| 8 | Cancelamento tardio (2º jogador entra no veículo, `limitedFT` 1 ou 2) | reembolso integral |
+| 8 | Cancelamento tardio em modo HC (grupo de HC com veículo, 2º jogador entra no veículo durante a contagem, `limitedFT` 1 ou 2, destino que não seja base rebelde/aeroporto/milbase) | `resourcesFIA` estornado integralmente |
 
 Os cenários 4, 5 e 8 só aparecem em condições específicas e são os que a
 implementação tende a quebrar sem ninguém notar.

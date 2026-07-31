@@ -47,6 +47,10 @@ private _distanceX = round (((player distance2D _positionX)/200)/2);
 // * cobertos.
 private _charged = [player, _positionX, "rally", localize "STR_A3AP_rally_header"] call A3A_fnc_fastTravelCharge;
 if (_charged < 0) exitWith {};
+// * ANCORA-REEMBOLSO: sem estorno neste arquivo, de proposito. Entre a
+// * cobranca acima e o teleporte abaixo nao existe nenhum ponto de
+// * cancelamento, entao nao ha o que reverter. Grep por ANCORA-REEMBOLSO
+// * para achar a politica inteira.
 
 disableUserInput true;
 cutText [format [localize "STR_cut_RP_FT_timer", _distanceX],"BLACK",1]; 

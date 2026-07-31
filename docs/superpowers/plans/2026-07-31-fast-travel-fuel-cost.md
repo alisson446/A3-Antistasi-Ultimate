@@ -717,9 +717,9 @@ Antes do commit final, passar a matriz de verificação da spec inteira, incluin
 | 5 | Modo HC | debita `resourcesFIA`, `moneyX` intacto |
 | 6 | Cada toggle em Não | viagem correspondente de graça, sem diálogo |
 | 7 | `A3U_ftCostPerKm` em 5 e em 50 | custo escala linear |
-| 8 | Cancelamento tardio (2º jogador entra no veículo, `limitedFT` 1 ou 2) | reembolso integral |
+| 8 | Cancelamento tardio em modo HC (grupo de HC com veículo, 2º jogador entra no veículo durante a contagem, `limitedFT` 1 ou 2, destino que não seja base rebelde/aeroporto/milbase) | `resourcesFIA` estornado integralmente |
 
-O cenário 8 precisa de dois jogadores e `limitedFT` em 1 ou 2, com destino que **não** seja base rebelde/aeroporto/milbase. Se não houver como testar com dois jogadores, registrar isso explicitamente como não verificado em vez de marcar como passou.
+O cenário 8 só é alcançável em modo High Command: fora do HC, as guardas de `_isValidTargetLocation` (linhas 113/124 de `fn_fastTravelRadio.sqf`) já barram antes do cancelamento tardio, então o reembolso nunca dispara para viagem individual. Precisa de dois jogadores, um grupo de HC com veículo e `limitedFT` em 1 ou 2, com destino que **não** seja base rebelde/aeroporto/milbase. Se não houver como testar com dois jogadores, registrar isso explicitamente como não verificado em vez de marcar como passou.
 
 - [ ] **Step 5: Commit**
 

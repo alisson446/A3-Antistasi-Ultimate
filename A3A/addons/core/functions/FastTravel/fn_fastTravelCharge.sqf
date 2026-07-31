@@ -35,6 +35,15 @@ params [
     ["_destName", "", [""]]
 ];
 
+// * Unico ponto de validacao de _mode. Um modo fora da whitelist aborta a
+// * viagem em vez de cair no default do switch abaixo ou ser comparado por
+// * isEqualTo mais adiante - assim nenhum modo desconhecido chega a debitar
+// * a carteira errada ou virar viagem gratis.
+if !(_mode in ["player", "rally", "hc"]) exitWith {
+    Error_1("fastTravelCharge: modo desconhecido %1", _mode);
+    -1
+};
+
 private _enabled = switch (_mode) do {
     case "player":  { A3U_ftCostPlayer };
     case "rally":   { A3U_ftCostRallyPoint };
@@ -83,8 +92,15 @@ private _message = format [
     _balance - _cost
 ];
 
-// Mesmo formato de chamada usado em fn_FIAskillAdd.sqf:27. Devolve BOOL.
-if !([_message, localize "STR_A3A_Dialogs_fast_travel_header", true, true] call BIS_fnc_guiMessage) exitWith { -1 };
+// * Parent=false: so o mapa esta aberto aqui, nao um dialogo, ao contrario de
+// * fn_FIAskillAdd.sqf:27. Mesmo parametro que fn_popup.sqf:20 usa fora de
+// * dialogo. BIS_fnc_guiMessage devolve false tanto para "Nao" quanto para
+// * falha ao criar a mensagem - o log abaixo distingue uma recusa real de um
+// * dialogo que nao abriu.
+if !([_message, localize "STR_A3A_Dialogs_fast_travel_header", true, false] call BIS_fnc_guiMessage) exitWith {
+    Info_1("fastTravelCharge: viagem recusada ou dialogo falhou (modo %1)", _mode);
+    -1
+};
 
 [-_cost, _mode] call A3A_fnc_fastTravelApplyFunds;
 

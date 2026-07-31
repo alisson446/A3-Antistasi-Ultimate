@@ -42,8 +42,11 @@ if (isNull _unit || {_destPos isEqualTo []}) exitWith {
 
 private _vehicleX = vehicle _unit;
 
-// * A ordem importa. Tanques casam com mais de uma classe, entao o teste de
-// * "Tank" tem que vir antes dos testes de caminhao/APC.
+// * A ordem importa, mas nao entre os isKindOf: Tank, Truck_F e Wheeled_APC_F
+// * sao ramos irmãos sob LandVehicle, entao esses quatro testes ja sao
+// * mutuamente exclusivos. Quem precisa vir primeiro e o teste "a pe"
+// * (_vehicleX isEqualTo _unit): sem ele, uma unidade sem veiculo nao casa
+// * com nenhum isKindOf e cairia no default de 1.0 em vez de 0.5.
 private _mult = switch (true) do {
     case (_vehicleX isEqualTo _unit):            { FT_MULT_FOOT };
     case (_vehicleX isKindOf "Air"):             { FT_MULT_AIR };
