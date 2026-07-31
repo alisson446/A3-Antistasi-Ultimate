@@ -80,9 +80,17 @@ Return: NUMBER — créditos, arredondado, nunca negativo
 Env:    Any (unscheduled ok)
 ```
 
-Sem UI, sem rede, sem `player`, sem escrita de variável. Lê apenas `vehicle _unit`,
-`position _unit` e o global `A3U_ftCostPerKm`. É a única parte verificável fora de
-jogo real, e é o que a GUI WIP poderá consumir se um dia for reativada.
+No caminho de cálculo: sem UI, sem rede, sem `player`, sem escrita de variável.
+Lê apenas `vehicle _unit`, `position _unit` e o global `A3U_ftCostPerKm`. É a única
+parte verificável fora de jogo real, e é o que a GUI WIP poderá consumir se um dia
+for reativada.
+
+A exceção é o guard de entrada inválida (unidade nula ou destino vazio), que loga
+via `Error()` antes de devolver 0. Essa macro faz `remoteExec` para o servidor em
+máquinas que não são servidor dedicado, então tecnicamente toca a rede — mas é o
+idioma de log padrão do mod, usado em todo o codebase, e só dispara quando a função
+foi chamada errado. Trocar por um retorno silencioso custaria o rastro de
+diagnóstico sem ganho prático.
 
 ```sqf
 _dist = (position _unit) distance2D _destPos;   // metros
