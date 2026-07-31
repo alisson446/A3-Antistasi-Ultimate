@@ -222,8 +222,8 @@ proporcional à quantidade de combustível adicionado, não ao tipo de veículo.
 
 **Teste:** defina `player setVariable ["moneyX", 10000, true]` e `A3U_refuelCostPerLiter = 1`.
 
-1. Abastça um Offroad vazio (ex: ~60L) de 0% a 100%. Anote o custo.
-2. Abastça um caminhão vazio (ex: Kamaz, ~300L) de 0% a 100%. Anote o custo.
+1. Abasteça um Offroad vazio (ex: ~60L) de 0% a 100%. Anote o custo.
+2. Abasteça um caminhão vazio (ex: Kamaz, ~300L) de 0% a 100%. Anote o custo.
 
 Esperado: a razão entre os dois custos deve ser aproximadamente a razão entre as
 capacidades de tanque (300/60 = 5×). Se um caminhão custa 5× mais que um Offroad
@@ -258,7 +258,7 @@ Abastecimento de graça (taxa = 0) é um caso válido — qualquer camada acima 
 decidir não cobrar. O sistema deve reconhecer isso explicitamente.
 
 **Teste:** defina `A3U_refuelCostEnabled = 1` e `A3U_refuelCostPerLiter = 0`.
-Abastça um veículo vazio de 0% a 100%. Observe o RPT.
+Abasteça um veículo vazio de 0% a 100%. Observe o RPT.
 
 Esperado: abastecimento é de graça, sem hints. Procure no RPT (não no console
 in-game, é no arquivo `rpt`) por uma linha `Info` (não `Warning` ou `Error`)
@@ -302,7 +302,7 @@ Quando estiver testando, marque cada item com `[x]` enquanto executa:
 
 - [ ] 0. Parâmetros aparecem no setup
 - [ ] 1. Cobrança dispara apenas ao abastecer, não por proximidade
-- [ ] 2. Desligamento do toggle é no-op
+- [ ] 2. Multiplayer: dois jogadores no mesmo posto, só um paga
 - [ ] 3. Puxar veículo da garagem não dispara cobrança de restauração
 - [ ] 4. Sair do raio no meio do abastecimento finaliza a sessão
 - [ ] 5. Saldo insuficiente no meio do abastecimento para o combustível
