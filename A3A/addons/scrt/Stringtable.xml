@@ -18546,7 +18546,7 @@
                 <Chinesesimp>拆除模式现在已启用。</Chinesesimp>
                 <Korean>철거 모드가 이제 활성화되었습니다.</Korean>
                 <French>Le mode démolition est maintenant ACTIVÉ.</French>
-                <Turkish>Yıkım modu şimdi ETKİNLEŞTİRİLD
+                <Turkish>Yıkım modu şimdi ETKİNLEŞTİRİLDİ.</Turkish>
             </Key>
             <Key ID="STR_A3A_teardownModeDisabled_text">
                 <Original>Teardown mode is now DISABLED.</Original>
