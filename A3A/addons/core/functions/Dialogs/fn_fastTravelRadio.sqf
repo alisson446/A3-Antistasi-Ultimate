@@ -143,7 +143,18 @@ if (_positionTel distance getMarkerPos _base < 500) then {
 	private _positionX = [getMarkerPos _base, 10, random 360] call BIS_Fnc_relPos;
 	private _distanceX = round (((position _boss) distance _positionX)/200);
 	private _forcedX = false;
-	
+	// * Custo de combustivel. Cobra aqui, depois de todas as guardas e
+	// * antes da tela preta com timer, como pede a spec.
+	// * ANCORA-REEMBOLSO: ponto de cobranca. As outras ancoras deste
+	// * arquivo tratam o que acontece se a viagem falhar depois daqui.
+	// * Grep por ANCORA-REEMBOLSO para achar a politica inteira.
+	private _ftMode = ["player", "hc"] select _esHC;
+	private _costUnit = if (_esHC) then {_boss} else {player};
+	private _destName = markerText _base;
+	if (_destName isEqualTo "") then {_destName = _base};
+	private _charged = [_costUnit, _positionX, _ftMode, _destName] call A3A_fnc_fastTravelCharge;
+	if (_charged < 0) exitWith {};
+
 	if (!_esHC) then {
 		disableUserInput true; 
 		cutText [format [localize "STR_hints_FT_timer", _distanceX],"BLACK",1]; 
@@ -169,6 +180,12 @@ if (_positionTel distance getMarkerPos _base < 500) then {
 	};
 
 	if (_checkForPlayer and !_isValidTargetLocation) exitWith {
+		// * ANCORA-REEMBOLSO: a viagem foi cancelada DEPOIS da cobranca,
+		// * porque outro jogador entrou num veiculo do grupo durante a
+		// * contagem. Ninguem se moveu, entao devolve o valor integral.
+		// * Se um dia a politica mudar para "cobrou, cobrou", e esta
+		// * linha que sai.
+		[_charged, _ftMode] call A3A_fnc_fastTravelApplyFunds;
 		[localize "STR_A3A_Dialogs_fast_travel_header", format [localize "STR_A3A_Dialogs_fast_travel_cancel",groupID _groupX]] call A3A_fnc_customHint;
 	};
 
@@ -192,6 +209,10 @@ if (_positionTel distance getMarkerPos _base < 500) then {
 					_road = _roads select 0;
 					private _pos = position _road findEmptyPosition [(sizeOf typeOf vehicle _unit) / 2, 100, typeOf (vehicle _unit)];
 					if (_pos isEqualTo []) exitWith {
+						// * ANCORA-REEMBOLSO: sem estorno, de proposito. Este ponto
+						// * fica no meio do teleporte, com parte do grupo ja movida,
+						// * entao a viagem aconteceu em parte. Devolver o dinheiro
+						// * aqui seria pagar pelo deslocamento ja feito.
 						[localize "STR_A3A_Dialogs_fast_travel_header", localize "STR_A3A_Dialogs_fast_travel_no_empty_position"] call SCRT_fnc_misc_deniedHint
 					};
 					vehicle _unit setPos _pos;
