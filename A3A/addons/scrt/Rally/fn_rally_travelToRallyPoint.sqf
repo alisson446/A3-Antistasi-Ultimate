@@ -40,7 +40,15 @@ if ([position _rallyPoint, 50] call A3A_fnc_enemyNearCheck) exitWith {
 private _positionX = [_rallyPosition, 10, random 360] call BIS_fnc_relPos;
 private _distanceX = round (((player distance2D _positionX)/200)/2);
 
-disableUserInput true; 
+// * Custo de combustivel, cobrado antes da tela preta e do timer.
+// * Este gate mora aqui, e nao em fn_fastTravelRadio.sqf, porque o rally tem
+// * DOIS pontos de entrada: o desvio em fn_fastTravelRadio.sqf:74 e a
+// * addAction da bandeira do HQ em fn_initClient.sqf:519. So aqui os dois sao
+// * cobertos.
+private _charged = [player, _positionX, "rally", localize "STR_A3AP_rally_header"] call A3A_fnc_fastTravelCharge;
+if (_charged < 0) exitWith {};
+
+disableUserInput true;
 cutText [format [localize "STR_cut_RP_FT_timer", _distanceX],"BLACK",1]; 
 sleep 1;
 
