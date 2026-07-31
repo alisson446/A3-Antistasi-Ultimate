@@ -17454,6 +17454,15 @@
                 <French>Veuillez désactiver le mode de démolition actif pour utiliser cette option.</French>
                 <Turkish>Bu seçeneği kullanmak için aktif Yıkım modunu devre dışı bırakın.</Turkish>
             </Key>
+            <Key ID="STR_A3A_Dialogs_fast_travel_cost_confirm">
+                <Original>Travel to %1?&lt;br/&gt;Distance: %2 km&lt;br/&gt;Fuel cost: %3%4&lt;br/&gt;Balance after: %5%4</Original>
+            </Key>
+            <Key ID="STR_A3A_Dialogs_fast_travel_cost_denied">
+                <Original>You need %1%2 to cover the fuel for this trip, but you only have %3%2.</Original>
+            </Key>
+            <Key ID="STR_A3A_Dialogs_fast_travel_cost_denied_hc">
+                <Original>The faction needs %1%2 to cover the fuel for this move, but only has %3%2.</Original>
+            </Key>
         </Container>
         <Container name="A3A_OrgPlayers">
             <Key ID="STR_A3A_OrgPlayers_donateMoney_header">
