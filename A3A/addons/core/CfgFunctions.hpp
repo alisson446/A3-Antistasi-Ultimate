@@ -568,6 +568,15 @@ class CfgFunctions
             class punishment_sentence_server {};
         };
 
+        class Refuel {
+            file = QPATHTOFOLDER(functions\Refuel);
+            class fuelTankCapacity {};
+            class refuelCost {};
+            class refuelMonitor {};
+            class refuelSessionClose {};
+            class refuelSessionTick {};
+        };
+
         class REINF {
             file = QPATHTOFOLDER(functions\REINF);
             class addBombRun {};
