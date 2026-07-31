@@ -43,9 +43,14 @@ Peças reaproveitadas:
   `A3A/addons/garage/Refuel/fn_refuelVehicleFromSources.sqf:26-30` já usa;
 - localidade de `setFuel`: precisa rodar na máquina dona do veículo, como o
   `remoteExecCall ["setFuel", owner _vehicle]` da linha 79-81 do mesmo arquivo;
-- mensagens: `A3A_fnc_customHint` para informação, `SCRT_fnc_misc_deniedHint` para
-  negativa;
-- CBA está disponível e `CBA_fnc_addPerFrameHandler` já é usado no repositório.
+- mensagens: `A3A_fnc_customHint` (cabeçalho, corpo) para informação e
+  `SCRT_fnc_misc_deniedHint` para negativa, que é o mesmo `customHint` mais um som
+  de falha (`fn_misc_deniedHint.sqf`);
+- loop persistente de cliente: o idioma do repositório é `[] spawn` mais
+  `while {true} do { sleep N; ... }`, como `A3A_fnc_clientIdleChecker`
+  (`fn_clientIdleChecker.sqf:24-25`), registrado entre os `spawn` de
+  `fn_initClient.sqf:187-190`. `CBA_fnc_addPerFrameHandler` não é usado em lugar
+  nenhum do repositório, então esta spec não o introduz.
 
 ## Decisões
 
@@ -80,7 +85,7 @@ Pasta nova `A3A/addons/core/functions/Refuel/`, registrada em
 no mesmo formato do bloco `FastTravel` (linha 360). Fica em `core` porque depende de
 `A3A_fuelStationTypes` e da carteira, ambos de `core`.
 
-Quatro funções, com a mesma fronteira da spec de fast travel: cálculo puro separado
+Cinco funções, com a mesma fronteira da spec de fast travel: cálculo puro separado
 de efeito colateral.
 
 ### `A3A_fnc_fuelTankCapacity` — cálculo puro
@@ -119,34 +124,52 @@ graça. O arredondamento acontece uma única vez, na hora de debitar.
 Junto com `fuelTankCapacity`, é a parte conferível no debug console sem gastar
 dinheiro.
 
-### `A3A_fnc_refuelMonitorInit` — inicialização do cliente
+### `A3A_fnc_refuelSessionTick` — cobrança de uma amostra
 
 ```
-Args:   nenhum
+Args:   [_vehicle]
 Return: Nothing
 Env:    Any
 ```
 
-Chamada uma vez em `A3A/addons/core/functions/init/fn_initClient.sqf`, junto dos
-outros sistemas de cliente (perto dos `spawn` da faixa das linhas 187-193).
+Processa uma amostra de um veículo já filtrado pelo monitor: lê o estado da sessão
+(criando se não existe), calcula o delta, aplica as guardas, acumula o custo, corta
+o combustível se o saldo não cobre e debita em bloco quando passa do limiar. É o
+coração da mecânica.
+
+### `A3A_fnc_refuelSessionClose` — fechamento e acerto
+
+```
+Args:   [_vehicle]
+Return: Nothing
+Env:    Any
+```
+
+Reconcilia pelo combustível medido, debita ou estorna a diferença, emite o hint de
+resumo e apaga o estado. Chamada de mais de um lugar (fim por inatividade, veículo
+fora do raio, jogador longe do posto), por isso é função própria e não um trecho
+dentro do tick. Sai sem fazer nada se o veículo não tem sessão aberta.
+
+### `A3A_fnc_refuelMonitor` — o loop do cliente
+
+```
+Args:   nenhum
+Return: Nothing
+Env:    Spawned
+```
+
+Iniciada com `[] spawn A3A_fnc_refuelMonitor` em
+`A3A/addons/core/functions/init/fn_initClient.sqf`, junto dos outros sistemas de
+cliente (linhas 187-190), seguindo o idioma de `A3A_fnc_clientIdleChecker`.
 
 Sai sem fazer nada se `A3U_refuelCostEnabled` é 0, se `A3U_refuelCostPerLiter` é 0,
 ou se `A3A_fuelStationTypes` não existe (mapa sem postos, ou init do servidor ainda
-não propagado). Caso contrário registra o PFH de `REFUEL_TICK` segundos apontando
-para `A3A_fnc_refuelMonitorTick`.
+não propagado). Desligada, a mecânica não custa nem um ciclo.
 
-Desligado, a mecânica não custa nem um tick.
-
-### `A3A_fnc_refuelMonitorTick` — o trabalho
-
-```
-Args:   [_args, _pfhHandle]  (assinatura de CBA_fnc_addPerFrameHandler)
-Return: Nothing
-Env:    Unscheduled
-```
-
-Faz a detecção, a cobrança, o corte e a reconciliação. É a única função com efeito
-colateral.
+Ligada, roda `while {true} do { sleep REFUEL_TICK; ... }`: encontra postos perto do
+jogador, seleciona os veículos candidatos, resolve o pagador, chama
+`A3A_fnc_refuelSessionTick` para cada veículo elegível e
+`A3A_fnc_refuelSessionClose` para os que saíram da condição.
 
 ## Estado por sessão de abastecimento
 
@@ -171,17 +194,20 @@ código de limpeza próprio.
 
 ## Fluxo do tick
 
-Constantes do arquivo, não parâmetros de missão:
+Constantes em `#define` no topo do arquivo que as usa, não parâmetros de missão.
+Cada uma pertence a um arquivo só, então nenhuma precisa ser duplicada nem morar num
+header compartilhado:
 
-| Constante | Valor | Papel |
-|---|---|---|
-| `REFUEL_TICK` | 1 s | período do PFH |
-| `REFUEL_STATION_RANGE` | 40 m | jogador → posto, para acordar o monitor |
-| `REFUEL_VEHICLE_RANGE` | 25 m | posto → veículo acompanhado |
-| `REFUEL_MAX_LPS` | 40 L/s | acima disso é `setFuel` de script |
-| `REFUEL_IDLE_TIMEOUT` | 3 s | sem subida, fecha a sessão |
-| `REFUEL_COMMIT_THRESHOLD` | 25 créditos | pendente que dispara o débito |
-| `REFUEL_DENIED_COOLDOWN` | 15 s | entre avisos de saldo insuficiente |
+| Constante | Valor | Papel | Arquivo dono |
+|---|---|---|---|
+| `REFUEL_DEFAULT_CAPACITY` | 100 L | fallback de tanque sem config | `fn_fuelTankCapacity.sqf` |
+| `REFUEL_TICK` | 1 s | `sleep` entre amostras do loop | `fn_refuelMonitor.sqf` |
+| `REFUEL_STATION_RANGE` | 40 m | jogador → posto, para acordar o monitor | `fn_refuelMonitor.sqf` |
+| `REFUEL_VEHICLE_RANGE` | 25 m | posto → veículo acompanhado | `fn_refuelMonitor.sqf` |
+| `REFUEL_IDLE_TIMEOUT` | 3 s | sem subida, fecha a sessão | `fn_refuelMonitor.sqf` |
+| `REFUEL_MAX_LPS` | 40 L/s | acima disso é `setFuel` de script | `fn_refuelSessionTick.sqf` |
+| `REFUEL_COMMIT_THRESHOLD` | 25 créditos | pendente que dispara o débito | `fn_refuelSessionTick.sqf` |
+| `REFUEL_DENIED_COOLDOWN` | 15 s | entre avisos de saldo insuficiente | `fn_refuelSessionTick.sqf` |
 
 1. **Acordar.** `nearestObjects [player, A3A_fuelStationTypes, REFUEL_STATION_RANGE]`
    — teste do motor, não varredura de `A3A_fuelStations`. Vazio: fecha as sessões
@@ -212,9 +238,10 @@ Constantes do arquivo, não parâmetros de missão:
    chamada é rara de propósito: `resourcesPlayer` faz `spawn A3A_fnc_statistics` toda
    vez, e uma chamada por segundo sujaria o scheduler.
 9. **Fechamento.** `REFUEL_IDLE_TIMEOUT` sem subida, veículo fora do raio, jogador
-   longe do posto ou veículo destruído: executa a reconciliação, debita o saldo
-   final, emite um hint com litros e créditos totais por `A3A_fnc_customHint` e
-   apaga `A3A_refuelSession`. Um hint por abastecimento, não por tick.
+   longe do posto ou veículo destruído: o monitor chama
+   `A3A_fnc_refuelSessionClose`, que reconcilia, acerta a conta, emite um hint com
+   litros e créditos totais por `A3A_fnc_customHint` e apaga `A3A_refuelSession`.
+   Um hint por abastecimento, não por tick.
 
 `setFuel` do passo 7 roda direto se o veículo é local; senão,
 `[_veh, _nivel] remoteExecCall ["setFuel", _veh]`, que entrega ao dono do objeto.
