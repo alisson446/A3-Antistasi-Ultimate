@@ -18,7 +18,6 @@ Dependencies:
     <ARRAY> outposts
     <ARRAY> seaports
     <ARRAY> undercoverVehicles
-    <ARRAY> allArmoredHeadgear
     <NAMESPACE> sidesX
     <SIDE> teamPlayer
     <SIDE> Invaders
@@ -47,8 +46,6 @@ if (captive player) exitWith
 private _lowCiv = Faction(civilian) getOrDefault ["attributeLowCiv", false];
 private _civNonHuman = Faction(civilian) getOrDefault ["attributeCivNonHuman", false];
 
-private _roadblocks = controlsX select {isOnRoad(getMarkerPos _x)};
-
 if (_lowCiv || {_civNonHuman}) exitWith {
     [localize "STR_A3A_goUndercover_title", localize "STR_A3A_fn_undercover_canGoUn_no_lowciv"] call A3A_fnc_customHint;
     [false, "Undercover not allowed in current civ template."];
@@ -74,6 +71,15 @@ if !(isNull (objectParent player)) then
         ["Undercover", localize "STR_A3A_fn_undercover_canGoUn_no_towrope"] call A3A_fnc_customHint;
         _result = [false, "In vehicle with tow ropes attached"];
     };
+
+    // Vests, helmets, NVGs and uniforms stay visible through the windows.
+    // Weapons are considered stowed, so they are not checked here.
+    ([true] call A3A_fnc_undercoverGearCheck) params ["_gearOk", "_gearReasons", "_gearText"];
+    if (!_gearOk) exitWith
+    {
+        ["Undercover", _gearText] call A3A_fnc_customHint;
+        _result = [false] + _gearReasons;
+    };
 }
 else
 {
@@ -83,53 +89,20 @@ else
         _result = [false, "Recently reported"];
     };
 
-    private _text = localize "STR_A3A_fn_undercover_canGoUn_no_while";
-    _result = [true];
-    if (primaryWeapon player != "" || secondaryWeapon player != "" || handgunWeapon player != "") then
-    {
-        _text = format [localize "STR_A3A_fn_undercover_canGoUn_no_reason_weapon", _text];
-        _result set [0, false];
-        _result pushBack "Weapon visible";
-    };
-    if (vest player != "") then
-    {
-        _text = format [localize "STR_A3A_fn_undercover_canGoUn_no_reason_vest", _text];
-        _result set [0, false];
-        _result pushBack "Vest visible";
-    };
-    if (headgear player in allArmoredHeadgear) then
-    {
-        _text = format [localize "STR_A3A_fn_undercover_canGoUn_no_reason_helmet", _text];
-        _result set [0, false];
-        _result pushBack "Helmet visible";
-    };
-    if (hmd player != "") then
-    {
-        _text = format [localize "STR_A3A_fn_undercover_canGoUn_no_reason_ngv", _text];
-        _result set [0, false];
-        _result pushBack "NVG visible";
-    };
-    if ((uniform player != "") && !(uniform player in (A3A_faction_civ get "uniforms"))) then
-    {
-        _text = format [localize "STR_A3A_fn_undercover_canGoUn_no_reason_uniform", _text];
-        _result set [0, false];
-        _result pushBack "Suspicious uniform";
-    };
-    if (uniform player == "") then
-    {
-        _text = format [localize "STR_A3A_fn_undercover_canGoUn_no_reason_naked", _text];
-        _result set [0, false];
-        _result pushBack "No clothes";
-    };
+    ([false] call A3A_fnc_undercoverGearCheck) params ["_gearOk", "_gearReasons", "_gearText"];
+    _result = [_gearOk] + _gearReasons;
+
+    // Tow ropes are not gear, so they stay here and append on top of the text
+    // the gear check already accumulated.
     if (!isNull (player getVariable ["SA_Tow_Ropes_Vehicle", objNull])) then
     {
-        _text = format [localize "STR_A3A_fn_undercover_canGoUn_no_reason_rope", _text];
+        _gearText = format [localize "STR_A3A_fn_undercover_canGoUn_no_reason_rope", _gearText];
         _result set [0, false];
         _result pushBack "Holding tow ropes";
     };
     if !(_result select 0) then
     {
-        ["Undercover", _text] call A3A_fnc_customHint;
+        ["Undercover", _gearText] call A3A_fnc_customHint;
     };
 };
 
