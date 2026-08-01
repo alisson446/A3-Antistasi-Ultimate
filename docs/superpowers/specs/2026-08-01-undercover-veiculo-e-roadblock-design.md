@@ -191,7 +191,7 @@ Retorno:
     [_ok, _reasons, _hintText]
     _ok       : BOOL   : true se a aparência passa como civil
     _reasons  : ARRAY  : strings curtas de diagnóstico, ex. ["Vest visible"]
-    _hintText : STRING : texto pronto para A3A_fnc_customHint, vazio se _ok
+    _hintText : STRING : texto acumulado, pronto para A3A_fnc_customHint
 
 Escopo: Local
 Ambiente: Any
@@ -216,6 +216,11 @@ enquanto o loop de `goUndercover` apenas define um motivo.
 exatamente quais peças o impediram. O loop de `goUndercover` ignora esse retorno
 e usa as strings fixas dos motivos (`clothesVeh`, `clothesVeh2`), seguindo o que
 o `switch` já faz com todos os outros motivos.
+
+`_hintText` nunca volta vazio: quando nada bloqueia, ele contém só o cabeçalho
+`STR_A3A_fn_undercover_canGoUn_no_while`. Isso é necessário porque
+`canGoUndercover` ainda acrescenta o fragmento de cordas de reboque por cima do
+retorno, e um texto vazio faria o cabeçalho sumir do hint.
 
 O texto é montado acumulando os fragmentos já existentes no `Stringtable.xml`
 (`STR_A3A_fn_undercover_canGoUn_no_reason_weapon`, `..._vest`, `..._helmet`,
