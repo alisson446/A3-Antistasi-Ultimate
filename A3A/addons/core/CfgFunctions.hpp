@@ -827,6 +827,7 @@ class CfgFunctions
             class canGoUndercover {};
             class goUndercover {};
             class initUndercover {};
+            class undercoverGearCheck {};
         };
 
         class Utility {
