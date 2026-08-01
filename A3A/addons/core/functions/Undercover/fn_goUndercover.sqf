@@ -225,14 +225,26 @@ while {_reason == ""} do
             _reason = "Milbase";
         };
 
-        private _aggro = if (_baseSide == Occupants) then {aggressionOccupants + (tierWar * 10)} else {aggressionInvaders + (tierWar * 10)};
-        if (random 100 < _aggro) exitWith
-        {
-            private _roadblocks = controlsX select {isOnRoad(getMarkerPos _x)};
-            if (_base in _roadblocks || _onDetectionMarker) then {
-                _reason = "Roadblock";
-            };
-        };
+        // Roadblock detection roll disabled on purpose.
+        //
+        // The roll was `random 100 < aggression + (tierWar * 10)`. With tierWar
+        // at 10 that term alone reaches 100, so every roadblock broke the
+        // player's cover, every time, regardless of aggression. The floor was
+        // 10%. Airports, outposts, seaports and milbases are untouched: their
+        // exitWith blocks run above this point and still fire at 100%.
+        //
+        // To restore the old behaviour, uncomment the block below. The
+        // "Roadblock" case in the switch and its localized string were left in
+        // place precisely for that.
+        //
+        // private _aggro = if (_baseSide == Occupants) then {aggressionOccupants + (tierWar * 10)} else {aggressionInvaders + (tierWar * 10)};
+        // if (random 100 < _aggro) exitWith
+        // {
+        //     private _roadblocks = controlsX select {isOnRoad(getMarkerPos _x)};
+        //     if (_base in _roadblocks || _onDetectionMarker) then {
+        //         _reason = "Roadblock";
+        //     };
+        // };
         _lastBaseInside = _base; // Don't check this base again once we passed the check
     };
 };
