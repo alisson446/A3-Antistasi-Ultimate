@@ -77,6 +77,9 @@ private _secureBases = (
 
 private _lastBaseInside = "";
 private _reason = "";
+// Captured when a vehicle-scoped reason fires, so the switch below does not
+// have to re-read objectParent player after the player may have left.
+private _brokenVeh = objNull;
 ["Undercover", [""]] call EFUNC(Events,triggerEvent);
 
 while {_reason == ""} do
@@ -132,6 +135,22 @@ while {_reason == ""} do
             _reason = "NoFly";
         };
 
+        // Vests, helmets, NVGs and uniforms are visible through the windows.
+        // Weapons are considered stowed and stay allowed inside a vehicle.
+        ([true] call A3A_fnc_undercoverGearCheck) params ["_gearOk"];
+        if (!_gearOk) exitWith
+        {
+            _brokenVeh = _veh;
+            if ({((side _x == Invaders) || (side _x == Occupants)) && {(_x knowsAbout player > 1.4) || (_x distance player < 350)}} count allUnits > 0) then
+            {
+                _reason = "clothesVeh2";
+            }
+            else
+            {
+                _reason = "clothesVeh";
+            };
+        };
+
         if (_vehType isKindOf "Land") then
         {
             if (!(isOnRoad position _veh) && {count (_veh nearRoads 50) == 0}) then
@@ -156,9 +175,10 @@ while {_reason == ""} do
                 _reason = "BadMedic";
             };
         };
-        if ((primaryWeapon player != "") || (secondaryWeapon player != "") || (handgunWeapon player != "") || (vest player != "") || (getNumber(configfile >> "CfgWeapons" >> headgear player >> "ItemInfo" >> "HitpointsProtectionInfo" >> "Head" >> "armor") > 2) || (hmd player != "") || (!(uniform player in (A3A_faction_civ get "uniforms")))) exitWith
+        ([false] call A3A_fnc_undercoverGearCheck) params ["_gearOk"];
+        if (!_gearOk) exitWith
         {
-            if ({((side _x == Invaders) or (side _x == Occupants)) and ((_x knowsAbout player > 1.4) or (_x distance player < 350))} count allUnits > 0) then
+            if ({((side _x == Invaders) || (side _x == Occupants)) && {(_x knowsAbout player > 1.4) || (_x distance player < 350)}} count allUnits > 0) then
             {
                 _reason = "clothes2"
             }
@@ -284,6 +304,19 @@ switch (_reason) do
     {
         ["Undercover", localize "STR_A3A_fn_undercover_goUn_no_reason_2"] call A3A_fnc_customHint;
         player setVariable["compromised", dateToNumber[date select 0, date select 1, date select 2, date select 3, (date select 4) + 30]];
+    };
+    case "clothesVeh":
+    {
+        ["Undercover", localize "STR_A3A_fn_undercover_goUn_no_reason_veh_1"] call A3A_fnc_customHint;
+    };
+    case "clothesVeh2":
+    {
+        ["Undercover", localize "STR_A3A_fn_undercover_goUn_no_reason_veh_2"] call A3A_fnc_customHint;
+        player setVariable["compromised", dateToNumber[date select 0, date select 1, date select 2, date select 3, (date select 4) + 30]];
+        if (!isNull _brokenVeh) then
+        {
+            _brokenVeh setVariable ["A3A_reported", true, true];
+        };
     };
     case "BadMedic":
     {

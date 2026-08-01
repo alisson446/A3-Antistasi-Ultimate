@@ -3962,6 +3962,12 @@
                 <Chinesesimp>你不能进行伪装，因为你:&lt;br/&gt;&lt;br/&gt;被目视到身持武器&lt;br/&gt;正身着军用背心&lt;br/&gt;正穿戴一顶军用头盔&lt;br/&gt;正穿戴一顶军用夜视仪&lt;br/&gt;正身着军用制服！&lt;br/&gt;敌人已经把你拉入他们的通缉名单！</Chinesesimp>
                 <Turkish>Şunları gösterirken Gizli Kimlikte kalamazsınız:&lt;br/&gt;&lt;br/&gt;Görünür silah&lt;br/&gt;Yelek&lt;br/&gt;Kask&lt;br/&gt;Gece görüşü&lt;br/&gt;Askeri üniforma&lt;br/&gt;&lt;br/&gt;Düşman sizi Arananlar Listesine ekledi!</Turkish>
             </Key>
+            <Key ID="STR_A3A_fn_undercover_goUn_no_reason_veh_1">
+                <Original>You cannot stay Undercover in a vehicle while:&lt;br/&gt;&lt;br/&gt;Wearing a vest&lt;br/&gt;Wearing a helmet&lt;br/&gt;Wearing NVGs&lt;br/&gt;Wearing a mil uniform&lt;br/&gt;Being naked&lt;br/&gt;&lt;br/&gt;They can all be seen through the windows!</Original>
+            </Key>
+            <Key ID="STR_A3A_fn_undercover_goUn_no_reason_veh_2">
+                <Original>You cannot stay Undercover in a vehicle while:&lt;br/&gt;&lt;br/&gt;Wearing a vest&lt;br/&gt;Wearing a helmet&lt;br/&gt;Wearing NVGs&lt;br/&gt;Wearing a mil uniform&lt;br/&gt;Being naked&lt;br/&gt;&lt;br/&gt;The enemy saw you and added you to their Wanted List. Your vehicle is now marked!</Original>
+            </Key>
             <Key ID="STR_A3A_fn_undercover_goUn_no_reason_3">
                 <Original>You cannot stay Undercover while healing a compromised resistance member!</Original>
                 <Italian>Non puoi rimanere Sotto Copertura mentre curi un membro della resistenza comprommesso!</Italian>
