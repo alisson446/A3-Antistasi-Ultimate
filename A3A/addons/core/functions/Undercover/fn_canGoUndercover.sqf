@@ -29,8 +29,6 @@ Example:
 
 #include "..\..\script_component.hpp"
 
-private _reasons = [];
-
 if (player != player getVariable["owner", player]) exitWith
 {
     ["Undercover", localize "STR_A3A_fn_undercover_canGoUn_no_ai"] call A3A_fnc_customHint;
