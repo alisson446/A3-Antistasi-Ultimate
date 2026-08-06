@@ -26,7 +26,7 @@ private _hasEF = "ef" in A3A_enabledDLC;
 ["flagMarkerType", "flag_Syndicat"] call _fnc_saveToTemplate;
 
 private _vehiclesBasic = ["I_G_Quadbike_01_F"];
-private _vehiclesLightUnarmed = ["I_G_Offroad_01_F", "I_C_Offroad_02_unarmed_F"]; 
+private _vehiclesLightUnarmed = ["I_G_Offroad_01_F", "I_C_Offroad_02_unarmed_F"];
 private _vehiclesLightArmed = ["I_C_Offroad_02_LMG_F", "I_G_Offroad_01_armed_F"];
 private _VehTruck = ["I_C_Van_01_transport_F"];
 private _vehiclesAt = ["I_G_Offroad_01_AT_F", "I_C_Offroad_02_AT_F"];
@@ -149,10 +149,10 @@ private _headgear = [
   "H_Booniehat_khk_hs",
   "H_Booniehat_khk",
   "H_Booniehat_tan",
-  "H_Booniehat_oli",    
+  "H_Booniehat_oli",
   "H_Bandanna_gry",
   "H_Bandanna_blu",
-  "H_Bandanna_cbr",    
+  "H_Bandanna_cbr",
   "H_Bandanna_khk_hs",
   "H_Bandanna_khk",
   "H_Bandanna_sgg",
@@ -193,21 +193,23 @@ private _headgear = [
   "H_StrawHat_dark"
 ];
 
-private _dlcheadgear = [];
+private _dlcHeadgear = [];
 
 if (_hasRF) then {
   _dlcUniforms append [
-    "U_C_PilotJacket_black_RF", 
-    "U_C_PilotJacket_open_black_RF", 
-    "U_C_PilotJacket_brown_RF", 
-    "U_C_PilotJacket_open_brown_RF", 
-    "U_C_PilotJacket_lbrown_RF", 
+    "U_C_PilotJacket_black_RF",
+    "U_C_PilotJacket_open_black_RF",
+    "U_C_PilotJacket_brown_RF",
+    "U_C_PilotJacket_open_brown_RF",
+    "U_C_PilotJacket_lbrown_RF",
     "U_C_PilotJacket_open_lbrown_RF"
   ];
 };
 
-["uniforms", _rebUniforms + _dlcUniforms] call _fnc_saveToTemplate;
-["headgear", _headgear + _dlcheadgear] call _fnc_saveToTemplate;
+private _headgearAll = (_headgear + _dlcHeadgear);
+private _uniformsAll = (_rebUniforms + _dlcUniforms);
+["headgear", _headgearAll] call _fnc_saveToTemplate;
+["uniforms", _uniformsAll] call _fnc_saveToTemplate;
 
 /////////////////////
 ///  Identities   ///
@@ -217,6 +219,7 @@ private _faces = ["TanoanHead_A3_01","TanoanHead_A3_02","TanoanHead_A3_03","Tano
 private _voices = ["Male01ENGFRE","Male02ENGFRE","Male03FRE","Male02FRE","Male01FRE"];
 ["voices", _voices] call _fnc_saveToTemplate;
 ["faces", _faces] call _fnc_saveToTemplate;
+
 //////////////////////////
 //       Loadouts       //
 //////////////////////////
@@ -226,10 +229,10 @@ _loadoutData set ["maps", ["ItemMap"]];
 _loadoutData set ["watches", ["ItemWatch"]];
 _loadoutData set ["compasses", ["ItemCompass"]];
 _loadoutData set ["binoculars", ["Binocular"]];
-_loadoutData set ["uniforms", _rebUniforms + _dlcUniforms]; ///check this one
+_loadoutData set ["uniforms", _rebUniforms + _dlcUniforms];
 
-_loadoutData set ["glasses", ["G_Lady_Blue","G_Shades_Black", "G_Shades_Blue", "G_Shades_Green", "G_Shades_Red", "G_Aviator", "G_Spectacles", "G_Spectacles_Tinted", "G_Sport_BlackWhite", "G_Sport_Blackyellow", "G_Sport_Greenblack", "G_Sport_Checkered", "G_Sport_Red", "G_Squares", "G_Squares_Tinted"]];
-_loadoutData set ["goggles", ["G_Lowprofile"]];
+_loadoutData set ["glasses", ["G_Aviator", "G_Spectacles", "G_Spectacles_Tinted", "G_Squares", "G_Squares_Tinted"]];
+_loadoutData set ["goggles", []];
 _loadoutData set ["facemask", ["G_Bandanna_blk", "G_Bandanna_oli", "G_Bandanna_khk", "G_Bandanna_tan", "G_Bandanna_beast", "G_Bandanna_shades", "G_Bandanna_sport", "G_Bandanna_aviator"]];
 _loadoutData set ["balaclavas", ["G_Balaclava_blk", "G_Balaclava_BlueStrips", "G_Balaclava_Flecktarn", "G_Balaclava_Halloween_01", "G_Balaclava_lowprofile", "G_Balaclava_oli", "G_Balaclava_Flames1", "G_Balaclava_Scarecrow_01", "G_Balaclava_Skull1", "G_Balaclava_Tropentarn"]];
 _loadoutData set ["argoFacemask", ["G_Bandanna_BlueFlame1", "G_Bandanna_BlueFlame2", "G_Bandanna_CandySkull", "G_Bandanna_OrangeFlame1", "G_Bandanna_RedFlame1", "G_Bandanna_Skull1", "G_Bandanna_Syndikat1", "G_Bandanna_Syndikat2","G_Bandanna_Skull2", "G_Bandanna_Vampire_01"]];
