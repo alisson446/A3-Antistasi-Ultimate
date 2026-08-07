@@ -72,6 +72,8 @@ if (_winner == teamPlayer) then
 	private _minAttack = (1 + random 0.5) * A3A_balanceResourceRate;
 	if (_resources < _minAttack) exitWith {
 		Info_2("Available resources (%1) below minimum attack (%2), sending no counterattack", _resources, _minAttack);
+		private _locationName = [_markerX] call A3A_fnc_localizar;
+		[localize "STR_notifiers_no_retaliation_title", format [localize "STR_notifiers_no_retaliation_body", _locationName]] remoteExec ["A3A_fnc_customHint", teamPlayer, false];
 	};
 
 	private _vehCount = round (random 0.5 + _resources / A3A_balanceVehicleCost);

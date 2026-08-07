@@ -4369,6 +4369,12 @@
             <Key ID="STR_notifiers_retaliation_resolved_body">
                 <Original>The counterattack against %1 has been dealt with. This position is now safe to save.</Original>
             </Key>
+            <Key ID="STR_notifiers_no_retaliation_title">
+                <Original>Position Secured</Original>
+            </Key>
+            <Key ID="STR_notifiers_no_retaliation_body">
+                <Original>No counterattack is coming for %1. This position is safe to save immediately.</Original>
+            </Key>
             <Key ID="STR_notifiers_factory_lost_other">
                 <Original>%1 has lost a Factory</Original>
                 <Russian>%1 потеряли контроль над фабрикой</Russian>
