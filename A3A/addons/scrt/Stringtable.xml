@@ -4363,6 +4363,12 @@
             <Key ID="STR_notifiers_retaliation_incoming_body">
                 <Original>The enemy is sending a counterattack to retake this position. Repel it before saving, or the capture may not be kept.</Original>
             </Key>
+            <Key ID="STR_notifiers_retaliation_resolved_title">
+                <Original>Position Secured</Original>
+            </Key>
+            <Key ID="STR_notifiers_retaliation_resolved_body">
+                <Original>The counterattack has been dealt with. This position is now safe to save.</Original>
+            </Key>
             <Key ID="STR_notifiers_factory_lost_other">
                 <Original>%1 has lost a Factory</Original>
                 <Russian>%1 потеряли контроль над фабрикой</Russian>

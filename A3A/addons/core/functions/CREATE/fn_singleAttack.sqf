@@ -20,6 +20,8 @@ params ["_mrkDest", "_side", "_vehCount", "_reveal"];
 
 if ((_side == Occupants && areOccupantsDefeated) || {(_side == Invaders && areInvadersDefeated)}) exitWith {
     ServerInfo_1("%1 faction was defeated earlier, aborting single attack.", str _side);
+    [_mrkDest] call A3A_fnc_pendingCaptureRemove;
+    [localize "STR_notifiers_retaliation_resolved_title", localize "STR_notifiers_retaliation_resolved_body"] remoteExec ["A3A_fnc_customHint", teamPlayer, false];
 };
 
 private _targPos = markerPos _mrkDest;
@@ -57,6 +59,11 @@ while {true} do
     // Attempt to flip marker
     [_mrkDest, _markerSide] remoteExec ["A3A_fnc_zoneCheck", 2];
     sleep 30;
+};
+
+[_mrkDest] call A3A_fnc_pendingCaptureRemove;
+if (!_victory) then {
+    [localize "STR_notifiers_retaliation_resolved_title", localize "STR_notifiers_retaliation_resolved_body"] remoteExec ["A3A_fnc_customHint", teamPlayer, false];
 };
 
 { [_x] spawn A3A_fnc_VEHDespawner } forEach _vehicles;
