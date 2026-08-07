@@ -75,8 +75,12 @@ private _antennasDeadPositions = [];
 { _antennasDeadPositions pushBack getPos _x; } forEach antennasDead;
 ["antennas", _antennasDeadPositions] call A3A_fnc_setStatVariable;
 //["mrkNATO", (markersX - controlsX) select {sidesX getVariable [_x,sideUnknown] == Occupants}] call A3A_fnc_setStatVariable;
-["mrkSDK", (markersX - controlsX -  watchpostsFIA - roadblocksFIA - aapostsFIA - atpostsFIA - hmgpostsFIA) select {sidesX getVariable [_x,sideUnknown] == teamPlayer}] call A3A_fnc_setStatVariable;
-["mrkCSAT", (markersX - controlsX) select {sidesX getVariable [_x,sideUnknown] == Invaders}] call A3A_fnc_setStatVariable;
+// Markers with an unresolved retaliation save under their previous owner instead of the
+// current one, so quitting before repelling the counterattack doesn't lock in the capture.
+private _pendingOwnerHM = createHashMapFromArray (A3A_pendingCaptures apply { [_x#0, _x#1] });
+private _fnc_effectiveSide = { _pendingOwnerHM getOrDefault [_this, sidesX getVariable [_this, sideUnknown]] };
+["mrkSDK", (markersX - controlsX -  watchpostsFIA - roadblocksFIA - aapostsFIA - atpostsFIA - hmgpostsFIA) select {(_x call _fnc_effectiveSide) == teamPlayer}] call A3A_fnc_setStatVariable;
+["mrkCSAT", (markersX - controlsX) select {(_x call _fnc_effectiveSide) == Invaders}] call A3A_fnc_setStatVariable;
 ["posHQ", [getMarkerPos respawnTeamPlayer,[getDir boxX,getPos boxX],[getDir mapX,getPos mapX],getPos flagX,[getDir vehicleBox,getPos vehicleBox]]] call A3A_fnc_setStatVariable;
 ["dateX", date] call A3A_fnc_setStatVariable;
 ["skillFIA", skillFIA] call A3A_fnc_setStatVariable;
