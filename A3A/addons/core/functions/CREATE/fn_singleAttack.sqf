@@ -8,6 +8,8 @@
         _side: SIDE : The side to send the attack
         _vehCount: NUMBER : Number of vehicles to use in the attack
         _reveal: NUMBER : Amount of info to reveal to rebels, 0 low, 1 high
+        _pendingToken: NUMBER : Token identifying this retaliation's A3A_pendingCaptures entry,
+            so only this script's own entry is cleared, never a newer one for the same marker
 
     Returns:
         Nothing
@@ -15,13 +17,13 @@
 #include "..\..\script_component.hpp"
 FIX_LINE_NUMBERS()
 
-params ["_mrkDest", "_side", "_vehCount", "_reveal"];
+params ["_mrkDest", "_side", "_vehCount", "_reveal", "_pendingToken"];
 
 
 if ((_side == Occupants && areOccupantsDefeated) || {(_side == Invaders && areInvadersDefeated)}) exitWith {
     ServerInfo_1("%1 faction was defeated earlier, aborting single attack.", str _side);
-    [_mrkDest] call A3A_fnc_pendingCaptureRemove;
-    [localize "STR_notifiers_retaliation_resolved_title", localize "STR_notifiers_retaliation_resolved_body"] remoteExec ["A3A_fnc_customHint", teamPlayer, false];
+    [_mrkDest, _pendingToken] call A3A_fnc_pendingCaptureRemove;
+    [localize "STR_notifiers_retaliation_resolved_title", format [localize "STR_notifiers_retaliation_resolved_body", [_mrkDest] call A3A_fnc_localizar]] remoteExec ["A3A_fnc_customHint", teamPlayer, false];
 };
 
 private _targPos = markerPos _mrkDest;
@@ -61,9 +63,9 @@ while {true} do
     sleep 30;
 };
 
-[_mrkDest] call A3A_fnc_pendingCaptureRemove;
+[_mrkDest, _pendingToken] call A3A_fnc_pendingCaptureRemove;
 if (!_victory) then {
-    [localize "STR_notifiers_retaliation_resolved_title", localize "STR_notifiers_retaliation_resolved_body"] remoteExec ["A3A_fnc_customHint", teamPlayer, false];
+    [localize "STR_notifiers_retaliation_resolved_title", format [localize "STR_notifiers_retaliation_resolved_body", [_mrkDest] call A3A_fnc_localizar]] remoteExec ["A3A_fnc_customHint", teamPlayer, false];
 };
 
 { [_x] spawn A3A_fnc_VEHDespawner } forEach _vehicles;

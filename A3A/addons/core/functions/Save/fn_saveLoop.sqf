@@ -75,6 +75,12 @@ private _antennasDeadPositions = [];
 { _antennasDeadPositions pushBack getPos _x; } forEach antennasDead;
 ["antennas", _antennasDeadPositions] call A3A_fnc_setStatVariable;
 //["mrkNATO", (markersX - controlsX) select {sidesX getVariable [_x,sideUnknown] == Occupants}] call A3A_fnc_setStatVariable;
+// Prune stale pending-capture entries (e.g. a headless client dropped mid-retaliation)
+// so a lost cleanup can't lock a point into reverting on every future save forever.
+// 2700s is A3A_fnc_singleAttack's own timeout; +300s covers scheduling/dispatch delay.
+A3A_pendingCaptures = A3A_pendingCaptures select { time - (_x#2) < 3000 };
+publicVariable "A3A_pendingCaptures";
+
 // Markers with an unresolved retaliation save under their previous owner instead of the
 // current one, so quitting before repelling the counterattack doesn't lock in the capture.
 private _pendingOwnerHM = createHashMapFromArray (A3A_pendingCaptures apply { [_x#0, _x#1] });

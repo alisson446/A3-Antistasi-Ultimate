@@ -78,15 +78,21 @@ if (_winner == teamPlayer) then
 	private _reveal = [markerPos _markerX] call A3A_fnc_calculateSupportCallReveal;
 	_reveal = [_loser, markerPos _markerX, _reveal] call A3A_fnc_useRadioKey;
 
-	[[_markerX, _loser, _vehCount, _reveal], "A3A_fnc_singleAttack"] call A3A_fnc_scheduler;
+	// _loser should always be Occupants or Invaders here (never teamPlayer or sideUnknown);
+	// guard the registration explicitly so that invariant is visible and can never be violated.
+	private _pendingToken = time;
+	if (_loser in [Occupants, Invaders]) then {
+	    A3A_pendingCaptures pushBack [_markerX, _loser, _pendingToken];
+	    publicVariable "A3A_pendingCaptures";
+	    private _locationName = [_markerX] call A3A_fnc_localizar;
+	    [localize "STR_notifiers_retaliation_incoming_title", format [localize "STR_notifiers_retaliation_incoming_body", _locationName]] remoteExec ["A3A_fnc_customHint", teamPlayer, false];
+	};
 
-	// just estimates here. 
+	[[_markerX, _loser, _vehCount, _reveal, _pendingToken], "A3A_fnc_singleAttack"] call A3A_fnc_scheduler;
+
+	// just estimates here.
 	A3A_supportStrikes pushBack [_loser, "TROOPS", markerPos _markerX, time + 2700, 2700, _resources];
     A3A_supportSpends pushBack [_loser, markerPos _markerX, markerPos _markerX, _resources, time];
-
-    A3A_pendingCaptures pushBack [_markerX, _loser, time];
-    publicVariable "A3A_pendingCaptures";
-    [localize "STR_notifiers_retaliation_incoming_title", localize "STR_notifiers_retaliation_incoming_body"] remoteExec ["A3A_fnc_customHint", teamPlayer, false];
 }
 else
 {
