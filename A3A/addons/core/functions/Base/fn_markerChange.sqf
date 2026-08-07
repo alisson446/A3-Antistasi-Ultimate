@@ -15,6 +15,7 @@ if (_markerX in markersChanging) exitWith {};
 markersChanging pushBackUnique _markerX;
 private _positionX = getMarkerPos _markerX;
 private _loser = sidesX getVariable [_markerX,sideUnknown];
+[_markerX] call A3A_fnc_pendingCaptureRemove;
 private _sides = [teamPlayer,Occupants,Invaders];
 private _other = "";
 private _textX = "";
@@ -82,6 +83,10 @@ if (_winner == teamPlayer) then
 	// just estimates here. 
 	A3A_supportStrikes pushBack [_loser, "TROOPS", markerPos _markerX, time + 2700, 2700, _resources];
     A3A_supportSpends pushBack [_loser, markerPos _markerX, markerPos _markerX, _resources, time];
+
+    A3A_pendingCaptures pushBack [_markerX, _loser, time];
+    publicVariable "A3A_pendingCaptures";
+    [localize "STR_notifiers_retaliation_incoming_title", localize "STR_notifiers_retaliation_incoming_body"] remoteExec ["A3A_fnc_customHint", teamPlayer, false];
 }
 else
 {
