@@ -168,6 +168,7 @@ class CfgFunctions
             class numericRank {};
             class onHeadlessClientDisconnect {};
             class onPlayerDisconnect {};
+            class pendingCaptureRemove {};
             class patrolDestinations {};
             class petrosDeathMonitor {};
             class placementSelection {};

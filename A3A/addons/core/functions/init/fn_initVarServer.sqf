@@ -181,6 +181,7 @@ zoneChecksMutex = createHashMap;
 garrisonIsChanging = false;
 movingMarker = false;
 markersChanging = [];
+A3A_pendingCaptures = [];		// [_marker, _previousOwner, _startTime] while its retaliation is unresolved
 
 playerHasBeenPvP = [];
 
