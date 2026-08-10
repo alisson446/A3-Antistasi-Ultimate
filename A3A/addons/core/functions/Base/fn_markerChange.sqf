@@ -338,13 +338,24 @@ if (_winner == teamPlayer) then {
 	//Convert all of the static weapons to teamPlayer, essentially. Make them mannable by AI.
 	//Make the size larger, as rarely does the marker cover the whole outpost.
 	private _staticWeapons = nearestObjects [_positionX, ["LandVehicle", "Ship"], _size * 1.5, true];
+	private _capturedStatics = [];
 	{
 		[_x, teamPlayer, true] call A3A_fnc_vehKilledOrCaptured;
 		if !(_x in staticsToSave) then {
 			staticsToSave pushBack _x;
+			_capturedStatics pushBack _x;
 		};
 	} forEach _staticWeapons;
 	publicVariable "staticsToSave";
+
+	// Registra na entrada de captura pendente (criada mais acima nesta mesma execucao)
+	// quais estaticas vieram COM o ponto, para que o save possa exclui-las e evitar
+	// duplicacao no load. Sem retaliacao enviada nao existe entrada, e nao ha o que fazer.
+	private _pendingIdx = A3A_pendingCaptures findIf { (_x#0) == _markerX };
+	if (_pendingIdx != -1) then {
+		(A3A_pendingCaptures select _pendingIdx) set [3, _capturedStatics];
+		publicVariable "A3A_pendingCaptures";
+	};
 
 	if (!isNull _flagX) then
 	{
