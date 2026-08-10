@@ -196,6 +196,18 @@ if (!isNil "isRallyPointPlaced" && {isRallyPointPlaced}) then {
 	_resourcesBackground = _resourcesBackground + round(_rallyPointCost/1.3);
 };
 
+// Soldados que o jogador recrutou para guarnecer um ponto cuja captura esta sendo
+// revertida se perderiam junto com o ponto. Credita o custo deles de volta nos totais
+// gravados (mesmo custo cobrado em fn_garrisonAdd.sqf: 1 HR + preco do tipo de unidade),
+// para que reforcar um ponto contestado nunca saia mais caro que nao reforcar.
+{
+	private _pMarker = _x#0;
+	{
+		_hrBackground = _hrBackground + 1;
+		_resourcesBackground = _resourcesBackground + (server getVariable [_x, 0]);
+	} forEach (garrison getVariable [_pMarker, []]);
+} forEach A3A_pendingCaptures;
+
 ["resourcesFIA", _resourcesBackground] call A3A_fnc_setStatVariable;
 ["hr", _hrBackground] call A3A_fnc_setStatVariable;
 ["HR_Garage", [] call HR_GRG_fnc_getSaveData] call A3A_fnc_setStatVariable;
