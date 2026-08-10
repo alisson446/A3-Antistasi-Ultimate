@@ -57,19 +57,41 @@ private _measureGarrison = {
 ```
 
 Todos os seis tipos de ponto em escopo têm limiares `[good, weakened]`
-definidos neste arquivo. A faixa "Weakened" é `[weakened, good)`:
+definidos neste arquivo: aeroporto `[40,20]` (linha 99), resource `[30,10]`
+(108), fábrica `[16,8]` (118), outpost `[16,8]` (130), seaport `[20,8]`
+(140), base militar `[40,20]` (151). Não existe estado "weakened"
+armazenado — é puramente derivado da contagem da guarnição.
 
-| Tipo | Linha | Limiares | Faixa Weakened | Alvo (ponto médio) |
-|---|---|---|---|---|
-| Aeroporto | 99 | `[40, 20]` | 20–39 | 30 |
-| Resource | 108 | `[30, 10]` | 10–29 | 20 |
-| Fábrica | 118 | `[16, 8]` | 8–15 | 12 |
-| Outpost | 130 | `[16, 8]` | 8–15 | 12 |
-| Seaport | 140 | `[20, 8]` | 8–19 | 14 |
-| Base militar | 151 | `[40, 20]` | 20–39 | 30 |
+**Estes limiares não servem como alvo de dimensionamento.** Eles são
+heurísticas de display que não acompanham o tamanho real das guarnições
+(ver abaixo): uma guarnição *cheia* de aeroporto frequentemente já exibe
+"Weakened". Usá-los como alvo poderia gerar uma guarnição maior que a
+cheia. O dimensionamento usa `A3A_fnc_garrisonSize`, não estes números.
 
-Não existe estado "weakened" armazenado — é puramente derivado da contagem
-da guarnição.
+### Tamanho nominal de uma guarnição
+
+`A3A/addons/core/functions/CREATE/fn_garrisonSize.sqf:37` retorna
+`4 * (_groups max 2)` — uma contagem de **unidades**, derivada do tamanho
+do marker, do tipo de ponto e de ser ou não linha de frente. Exemplos:
+aeroporto rende 8–56 unidades, outpost 12–36, resource/fábrica/seaport
+8–24. Comparando com os limiares acima, fica claro que os dois números não
+foram calibrados um contra o outro.
+
+`fn_initGarrisons.sqf:8-21` mostra que o array antigo tem exatamente
+`garrisonSize` entradas — preenche com grupos aleatórios e faz `resize`.
+Portanto "guarnição cheia" = `garrisonSize` entradas, e é essa a referência
+correta para enfraquecer.
+
+### O array antigo reflete baixas de combate
+
+`A3A/addons/core/functions/CREATE/fn_garrisonUpdate.sqf:41-44` remove uma
+entrada do array a cada unidade de guarnição morta (`_modeX == -1`,
+"remove 1 unit (killed EHs etc)"). Consequência importante para este
+design: no momento da captura, o array do ponto reflete apenas os
+sobreviventes do assalto do jogador — tipicamente perto de zero. Por isso
+**não** se pode tirar um snapshot da guarnição antes da captura e
+enfraquecê-lo; o dimensionamento tem que partir do valor nominal
+(`garrisonSize`), não do estado no momento da captura.
 
 Existe também `A3A/addons/core/functions/Garrison/fn_getGarrisonStatus.sqf`,
 que devolve as mesmas três strings a partir do sistema wurzel. Ele está
@@ -163,19 +185,22 @@ coerente entre si:
 1. **Posse** → dono anterior. Já implementado, sem mudança.
 
 2. **Guarnição enfraquecida.** Gera uma guarnição do lado `_previousOwner`
-   e grava, no lugar do estado vazio atual:
+   dimensionada em **metade da força nominal do ponto** —
+   `round (([_marker] call A3A_fnc_garrisonSize) / 2)` — e grava no lugar
+   do estado vazio atual:
    - array antigo: mesma construção de `fn_initGarrisons.sqf` (preenche com
-     grupos aleatórios da facção correspondente e faz `resize`), porém
-     dimensionado para o **alvo da tabela de limiares** acima — o ponto
-     médio da faixa Weakened daquele tipo de ponto (30 para
-     aeroporto/base militar, 20 para resource, 14 para seaport, 12 para
-     fábrica/outpost) — e não para o tamanho cheio de
-     `A3A_fnc_garrisonSize`. Esses alvos são valores fixos derivados dos
-     limiares e ficam bem dentro da faixa, sem depender de arredondamento.
+     grupos aleatórios da facção correspondente e faz `resize`), usando
+     esse tamanho pela metade;
    - arrays wurzel: linhas construídas com `A3A_fnc_createGarrisonLine`,
      distribuídas entre `%1_garrison` e `%1_requested` de modo que
      aproximadamente metade das linhas fique como "requisitada" (ausente),
      espelhando o efeito do parâmetro `_lose` de `fn_createGarrison.sqf`.
+
+   Metade da força nominal é imune tanto às baixas de combate quanto à
+   calibragem dos limiares de display. O texto exibido no mapa será uma
+   faixa abaixo do normal daquele ponto, que em pontos pequenos pode ser
+   "Decimated" em vez de "Weakened" — o efeito de jogo pretendido (voltar
+   parcial, nem vazio nem cheio) é garantido; a string exata não é.
 
    A guarnição é gravada como parcial, e a lógica normal de reforço do jogo
    volta a enchê-la ao longo do tempo — não há bloqueio de reforço nem
@@ -216,14 +241,13 @@ ainda há identidade de objeto — antes da conversão para arrays de
 propriedades em `fn_saveLoop.sqf` (~linha 230) — e tolerar objetos já
 destruídos ou nulos.
 
-**Calibragem do "Weakened".** Os limiares são absolutos e distintos por
-tipo de ponto, e os alvos estão fixados na tabela acima. O risco residual é
-de acoplamento: os alvos são derivados de constantes que vivem em
-`fn_cityinfo.sqf`. Se alguém alterar aqueles limiares no futuro sem
-atualizar os alvos, um ponto revertido pode passar a exibir "Good" ou
-"Decimated". A implementação deve deixar essa dependência explícita em
-comentário no código, apontando para `fn_cityinfo.sqf` como origem dos
-números.
+**String exibida no mapa.** Como o dimensionamento parte de
+`A3A_fnc_garrisonSize` e não dos limiares de `fn_cityinfo.sqf`, o texto
+exibido para um ponto revertido pode ser "Decimated" em pontos pequenos, e
+não literalmente "Weakened". Isso é aceito: o requisito real é o ponto
+voltar parcial em vez de vazio ou cheio. Não há acoplamento a constantes de
+display, o que também elimina o risco de os dois números saírem de sincronia
+no futuro.
 
 **Propriedade do jogador preservada.** Só objetos registrados em
 `_capturedStatics` são excluídos. Um veículo estacionado no ponto depois da
@@ -254,8 +278,11 @@ mais teste in-game no build empacotado (`build/@A3U`), estendendo
   confirmar que HR e dinheiro voltaram integralmente ao pool.
 - Confirmar que o mesmo cenário, com o ponto **spawnado** e com o ponto
   **despawnado**, produz o mesmo total — expondo qualquer contagem dupla.
-- Confirmar que o ponto revertido aparece como "Garrison: Weakened" ao ser
-  clicado no mapa, para cada tipo de ponto coberto.
+- Confirmar que o ponto revertido volta com guarnição **parcial**: nem
+  vazio (recaptura de graça) nem cheio. Conferir clicando no marker que a
+  contagem caiu em relação ao normal daquele ponto; a string exibida pode
+  ser "Weakened" ou "Decimated" dependendo do tamanho do ponto, e ambas são
+  aceitáveis desde que a guarnição exista e seja menor que a cheia.
 - Confirmar que o ponto revertido tem estáticas (não está desarmado) e que
   não há estáticas duplicadas/sobrepostas no local.
 - Confirmar que um veículo do jogador estacionado no ponto após a captura
