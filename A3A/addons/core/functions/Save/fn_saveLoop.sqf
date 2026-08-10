@@ -309,22 +309,42 @@ _prestigeBLUFOR = [];
 ["prestigeOPFOR", _prestigeOPFOR] call A3A_fnc_setStatVariable;
 ["prestigeBLUFOR", _prestigeBLUFOR] call A3A_fnc_setStatVariable;
 
+// Um ponto cuja captura esta sendo revertida voltaria ao inimigo com a guarnicao VAZIA
+// que a captura deixou - indefeso e recapturavel de graca. Gera uma guarnicao a meia
+// forca para gravar no lugar. Dado puro: nada aqui toca variavel viva.
+private _pendingGarrisonHM = createHashMap;
+{
+	_x params ["_pMarker", "_pOwner"];
+	_pendingGarrisonHM set [_pMarker, [_pMarker, _pOwner] call A3A_fnc_createWeakenedGarrison];
+} forEach A3A_pendingCaptures;
+
 _markersX = markersX - controlsX - watchpostsFIA - roadblocksFIA - aapostsFIA - atpostsFIA - hmgpostsFIA;
 _garrison = [];
 _wurzelGarrison = [];
 
 {
+	private _oldLine = garrison getVariable [_x,[]];
+	private _wGarr = garrison getVariable [format ["%1_garrison",_x], []];
+	private _wReq = garrison getVariable [format ["%1_requested",_x], []];
+
+	private _weakened = _pendingGarrisonHM getOrDefault [_x, []];
+	if (_weakened isNotEqualTo []) then {
+		_oldLine = _weakened#0;
+		_wGarr = _weakened#1;
+		_wReq = _weakened#2;
+	};
+
 	_garrison pushBack [
 		_x,
-		garrison getVariable [_x,[]],
+		_oldLine,
 		garrison getVariable [_x + "_lootCD", 0],
 		garrison getVariable [_x + "_powCD", 0],
 		garrison getVariable [_x + "_samDestroyedCD", 0]
 	];
 	_wurzelGarrison pushBack [
 		_x,
-		garrison getVariable [format ["%1_garrison",_x], []],
-	 	garrison getVariable [format ["%1_requested",_x], []],
+		_wGarr,
+	 	_wReq,
 		garrison getVariable [format ["%1_over", _x], []]
 	];
 } forEach _markersX;
