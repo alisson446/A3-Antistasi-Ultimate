@@ -248,6 +248,14 @@ A3A_buildingsToSave select {
 	_arrayEst pushBackUnique _x;
 };
 
+// Estaticas que vieram COM um ponto cuja captura esta sendo revertida nao podem ser
+// gravadas como do jogador: no load o ponto inimigo gera as dele, e as duas copias
+// apareceriam sobrepostas. Tem que ser aqui, enquanto ainda ha identidade de objeto -
+// depois do apply abaixo sobram so arrays de propriedades.
+{
+	_arrayEst = _arrayEst - (_x param [3, []]);
+} forEach A3A_pendingCaptures;
+
 // Build save data
 _arrayEst = _arrayEst apply {
 	private _properties = [typeOf _x, getPosWorld _x, vectorUp _x, vectorDir _x];
