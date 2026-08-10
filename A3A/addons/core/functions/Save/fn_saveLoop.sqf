@@ -78,6 +78,14 @@ private _antennasDeadPositions = [];
 // Prune stale pending-capture entries (e.g. a headless client dropped mid-retaliation)
 // so a lost cleanup can't lock a point into reverting on every future save forever.
 // 2700s is A3A_fnc_singleAttack's own timeout; +300s covers scheduling/dispatch delay.
+//
+// This function reads A3A_pendingCaptures in four separate places below and relies on
+// all four seeing one consistent registry. That only holds because fn_saveLoop.sqf runs
+// unscheduled (called via remoteExecCall [..., 2], no sleep/waitUntil in this file), so
+// it cannot yield mid-save while a retaliation resolves and mutates the registry out from
+// under it. Do not convert this call to spawn - that would let a half-reverted package
+// be written (e.g. ownership reverted from one read but statics excluded from a stale
+// list read before resolution, or vice versa).
 A3A_pendingCaptures = A3A_pendingCaptures select { time - (_x#2) < 3000 };
 publicVariable "A3A_pendingCaptures";
 
@@ -200,6 +208,11 @@ if (!isNil "isRallyPointPlaced" && {isRallyPointPlaced}) then {
 // revertida se perderiam junto com o ponto. Credita o custo deles de volta nos totais
 // gravados (mesmo custo cobrado em fn_garrisonAdd.sqf: 1 HR + preco do tipo de unidade),
 // para que reforcar um ponto contestado nunca saia mais caro que nao reforcar.
+// Nao ha checagem de lado aqui porque nao precisa: A3A_fnc_garrisonUpdate se recusa a
+// adicionar entradas cujo lado nao seja o dono atual do marker, e uma entrada pendente
+// implica que o marker e atualmente do jogador (qualquer mudanca de posse roda
+// A3A_fnc_pendingCaptureRemove antes) - entao tudo em garrison getVariable [_pMarker, []]
+// aqui so pode ser soldado do jogador.
 {
 	private _pMarker = _x#0;
 	{
@@ -250,10 +263,17 @@ A3A_buildingsToSave select {
 
 // Estaticas que vieram COM um ponto cuja captura esta sendo revertida nao podem ser
 // gravadas como do jogador: no load o ponto inimigo gera as dele, e as duas copias
-// apareceriam sobrepostas. Tem que ser aqui, enquanto ainda ha identidade de objeto -
-// depois do apply abaixo sobram so arrays de propriedades.
+// apareceriam sobrepostas. So exclui o que ainda esta na area do ponto no momento do
+// save - _capturedStatics inclui veiculos (nearestObjects em fn_markerChange.sqf usa
+// "LandVehicle", pai de Car/Tank/StaticWeapon), entao algo que o jogador levou embora
+// (ex.: um MRAP capturado dirigido de volta pra HQ) nao pode duplicar nada e continua
+// seu. Tem que ser aqui, enquanto ainda ha identidade de objeto - depois do apply
+// abaixo sobram so arrays de propriedades.
 {
-	_arrayEst = _arrayEst - (_x param [3, []]);
+	private _pMarker = _x#0;
+	private _mkPos = getMarkerPos _pMarker;
+	private _radius = ([_pMarker] call A3A_fnc_sizeMarker) * 1.5;
+	_arrayEst = _arrayEst - ((_x param [3, []]) select { _x distance2D _mkPos < _radius });
 } forEach A3A_pendingCaptures;
 
 // Build save data

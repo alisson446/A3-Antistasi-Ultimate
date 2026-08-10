@@ -40,10 +40,18 @@ private _groupPool = if (_side == Invaders) then {
 
 private _oldArray = [];
 if (count _groupPool > 0) then {
-    while {count _oldArray < _target} do {
+    // Bounded by iteration count, not by a while {count < target} condition: a group
+    // pool entry can itself be a zero-length array (selectRandom _groupPool returning
+    // []), which would never advance a while loop and hang forever. This runs from
+    // fn_saveLoop.sqf, which is unscheduled - a hang here is a full server freeze, not
+    // just a script timeout. 100 iterations is generous slack over the handful needed
+    // in the healthy case; a pathological pool just yields a short (safe) array instead
+    // of hanging.
+    for "_i" from 1 to 100 do {
+        if (count _oldArray >= _target) exitWith {};
         _oldArray append (selectRandom _groupPool);
     };
-    _oldArray resize _target;
+    _oldArray resize (_target min count _oldArray);
 } else {
     Error_1("No group pool available to build weakened garrison for %1", _marker);
 };
