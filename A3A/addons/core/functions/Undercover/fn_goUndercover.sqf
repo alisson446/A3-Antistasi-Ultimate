@@ -64,7 +64,7 @@ player setCaptive true;
 if (player == leader group player) then
 {
     {
-        if ((!isplayer _x) && (local _x) && (_x getVariable["owner", _x] == player)) then
+        if ((!isplayer _x) && {local _x} && {_x getVariable["owner", _x] == player || {_x isEqualTo petros}}) then
         {
             [_x] spawn A3A_fnc_undercoverAI;
         };
@@ -80,7 +80,8 @@ private _reason = "";
 // Captured when a vehicle-scoped reason fires, so the switch below does not
 // have to re-read objectParent player after the player may have left.
 private _brokenVeh = objNull;
-["Undercover", [""]] call EFUNC(Events,triggerEvent);
+
+[CBA_EVENT_CLIENT_UNDERCOVER_CHANGED, [true]] call FUNCMAIN(triggerLocalEvent);
 
 while {_reason == ""} do
 {
@@ -377,4 +378,7 @@ switch (_reason) do
         ["Undercover", "STR_A3A_fn_undercover_goUn_Error"] call A3A_fnc_customHint;
     };
 };
-["Undercover", [_reason]] call EFUNC(Events,triggerEvent);
+
+[CBA_EVENT_CLIENT_UNDERCOVER_CHANGED, [false, _reason]] call FUNCMAIN(triggerLocalEvent);
+
+nil;
